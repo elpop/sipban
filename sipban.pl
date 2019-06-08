@@ -30,19 +30,15 @@ my %Config;
 Config::Simple->import_from('/etc/sipban.conf', \%Config) or die Config::Simple->error();
 
 # check PID File
-#die "Already runnig" if Proc::PID::File->running( dir=>"/tmp/", name => basename("$0",".pl") );
-
-my $host = '';
+die "Already runnig" if Proc::PID::File->running( dir=>"/tmp/", name => basename("$0",".pl") );
 
 #--------------------#
 # Control Parameters #
 #--------------------#
 
 # Timers Info
-my $Start_Time     = time();
-my $SIPStatus_Time = $Start_Time + $Config{'timer.sipstatus'};
-my $Update_Time    = $Start_Time + $Config{'timer.dbupdate'};
-my $DBPing_Time    = $Start_Time + $Config{'timer.dbping'};
+my $Start_Time = time();
+my $Ping_Time  = $Start_Time + $Config{'ami.ping'};
 
 # Socket handlers
 my $asterisk_handler;
@@ -53,7 +49,10 @@ my $asterisk_client;
 $SIG{PIPE} = 'IGNORE';
 $SIG{INT} = $SIG{TERM} = $SIG{HUP} = 'Terminate';
 
-my $ipt = '/sbin/iptables';
+# Iptables commands
+my $ipt = "$Config{'iptables.path'}" . 'iptables';
+my $iptd = "$ipt -t filter -D sipban-udp -j RETURN";
+my $ipta = "$ipt -t filter -A sipban-udp -j RETURN";
 
 # Open Socket connection to accept clients requests
 my $server = IO::Socket::INET->new(LocalPort => "$Config{'control.port'}",
@@ -68,12 +67,10 @@ my %inbuffer     = ();
 my %outbuffer    = ();
 my %ready        = ();
 my %sessions     = ();
-my %exten_status = ();
 my %ban_ip       = ();
 
 tie %ready, 'Tie::RefHash';
 my $event_str = "";
-my $XML_msg   = "";
 
 # Flags to connect to Asterisk
 my $manager_connect_time = 0;
@@ -152,19 +149,19 @@ my %AMI_Handler = (
         # RemoteAddress: IPV4/UDP/10.211.55.2/59977
         #-----------------------------
         "invalidaccountid" => sub {
-	    my $packet_content_ref = shift;
+            my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
-	    my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
-	    if ($service eq 'PJSIP') {
-		unless( exists($ban_ip{"$remote_ip"}) ) {
-		    $ban_ip{$remote_ip} = time();
-		    Iptables_Block($remote_ip);
-		}
-	    }
-	},
+            my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
+            if ($service eq 'PJSIP') {
+                unless( exists($ban_ip{"$remote_ip"}) ) {
+                    $ban_ip{$remote_ip} = time();
+                    Iptables_Block($remote_ip);
+                }
+            }
+        },
         #-----------------------------
-	# Event: InvalidPassword
+        # Event: InvalidPassword
         # Privilege: security,all
         # EventTV: 2019-06-07T21:17:59.819+0000
         # Severity: Error
@@ -183,29 +180,17 @@ my %AMI_Handler = (
     }, # Event
 );
 
-##!/bin/bash
-
-#ip="$(which iptables 2>/dev/null)"
-#ip=${ip:=/sbin/iptables}
-
-
-#if [[  -n "${@%:*}" ]]; then
-#	$ip -t filter -D f2b-asterisk-tcp -j RETURN
-#	$ip -t filter -D f2b-asterisk-udp -j RETURN
-#
-#	$ip -t filter -A f2b-asterisk-tcp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
-#	$ip -t filter -A f2b-asterisk-udp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
-
-#	$ip -t filter -A f2b-asterisk-tcp -j RETURN
-#	$ip -t filter -A f2b-asterisk-udp -j RETURN
-#fi
-
-
 sub Iptables_Block {
     my $ip = shift;
-    my $rv = qx(/usr/local/bin/ban-sip-ip.sh $ip);
+    # /sbin/iptables -t filter -D sipban-udp -j RETURN
+    # /sbin/iptables -t filter -A sipban-udp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
+    # /sbin/iptables -t filter -D sipban-udp -j RETURN
+    my $rv = qx($iptd);
+    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
+    $rv = qx($ipta);
     print "BLOCK => $ip\n";
 }
+
 sub Terminate {
     my $client;
     # Clean up connections
@@ -256,7 +241,7 @@ sub Manager_Login {
 
 sub Connect_To_Asterisk {
     my $host = shift;
-    $asterisk_handler = new IO::Socket::INET->new( PeerAddr  => "$Config{'ami.host'}",
+    $asterisk_handler = new IO::Socket::INET->new( PeerAddr  => "$host",
                                                    PeerPort  => $Config{'ami.port'},
                                                    Proto     => "tcp",
                                                    ReuseAddr => 1,
@@ -328,29 +313,6 @@ sub Trim {
     }
     return wantarray ? @out : $out[0];
 }                	        
-
-#---------------------------------------------------------#
-#  Function: Ping([DB handler])                           #
-#---------------------------------------------------------#
-# Objetive: Send a silly query to keep DB connection      #
-#           alive.                                        #
-#   Params: DB handler                                    #
-#    Usage:                                               #
-#          Ping($dbh);                                    #
-#---------------------------------------------------------#
-
-sub Ping {
-     my ($dbh) = @_;
-     my $ret = 0;
-     
-     eval {
-         local $SIG{__DIE__}  = sub { return (0); };
-         local $SIG{__WARN__} = sub { return (0); };
-         # adapt the select statement to your database:
-         $ret = $dbh->do('select 1;');
-    };
-    return ($@) ? 0 : $ret;
-}
 
 #---------------------------------------------------------#
 #  Function: Handle_Clients([Client TCP handler])         #
@@ -465,17 +427,16 @@ sub Clean_Connection {
 #      Main block      #
 #======================#
 
-$/="\0";
+#$/="\0";
 
 while (1) { # Main loop #
     my $client;
     my $rv;
     my $data;
     if ($manager_connect_flag) {
-        $manager_connect_flag = Connect_To_Asterisk("$host");
+        $manager_connect_flag = Connect_To_Asterisk("$Config{'ami.host'}");
         unless ($manager_connect_flag) {
             Manager_Login();
-            Send_To_Asterisk(\"Action: PJSIPShowRegistrationInboundContactStatuses\r\n\r\n");
         } 
     }
     
@@ -488,7 +449,7 @@ while (1) { # Main loop #
             $select->add($client);
             Nonblock($client);
             $sessions{$client} = 1;
-            $outbuffer{$client} = "\nExtension Status\n\n>";
+            $outbuffer{$client} = "\nSipban (1.0)\n\n>";
         } 
         else {
             # read data
@@ -522,13 +483,9 @@ while (1) { # Main loop #
     }
     
     my $current_time = time();
-    if ($current_time >= $SIPStatus_Time) {
-        $SIPStatus_Time += $Config{'timer.sipstatus'};
-        Send_To_Asterisk(\"Action: PJSIPShowRegistrationInboundContactStatuses\r\n\r\n");
-    }
-    if ($current_time >= $Update_Time) {
-        $Update_Time += $Config{'timer.dbupdate'};
-#        Check_Status();
+    if ($current_time >= $Ping_Time) {
+        $Ping_Time += $Config{'ami.ping'};
+        Send_To_Asterisk(\"Action: Ping\r\n\r\n");
     }
 
     # Buffers to flush?
