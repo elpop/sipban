@@ -478,7 +478,7 @@ print LOG Time_Stamp() . " SipBan start\n";
 
 
 # Load white list from file to hash %white_list
-if (-e $Config{'iptables.whitelist'}) {
+if (-e $Config{'iptables.white_list'}) {
     open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
     while(<WL>) { # Read records
         chomp;
