@@ -155,7 +155,7 @@ my %AMI_Handler = (
             my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
             if ($service eq 'PJSIP') {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
-                    $ban_ip{$remote_ip} = time();
+                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
                     Iptables_Block($remote_ip);
                 }
             }
@@ -180,6 +180,13 @@ my %AMI_Handler = (
     }, # Event
 );
 
+sub Time_Stamp {
+    my ($sec, $min, $hour, $day,$month,$year) = (localtime( time() ))[0,1,2,3,4,5];
+    $year = $year + 1900;
+    $month++;
+    return sprintf("%04d-%02d-%02d %02d:%02d:%02d",$year,$month,$day,$hour,$min,$sec);
+}
+
 sub Iptables_Block {
     my $ip = shift;
     # /sbin/iptables -t filter -D sipban-udp -j RETURN
@@ -188,7 +195,8 @@ sub Iptables_Block {
     my $rv = qx($iptd);
     $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
     $rv = qx($ipta);
-    print "BLOCK => $ip\n";
+    print Time_Stamp() . " BLOCK => $ip\n";
+    print LOG Time_Stamp() . " BLOCK => $ip\n";
 }
 
 sub Terminate {
@@ -200,6 +208,7 @@ sub Terminate {
     }
     close($server);                   # destroy socket handler
     close($asterisk_handler);         # destroy asterisk manager conection
+    close(LOG);
     exit(0);                          # Exit without error
 }
 
@@ -342,9 +351,9 @@ sub Handle_Clients {
            }
        }
        if ($outbuffer{$client}) {
-            $outbuffer{$client} .= "\n>";
+            $outbuffer{$client} .= "\nsipban>";
        } else {
-            $outbuffer{$client} = '>';
+            $outbuffer{$client} = 'sipban>';
        }
     }
     delete $ready{$client};
@@ -427,7 +436,29 @@ sub Clean_Connection {
 #      Main block      #
 #======================#
 
-#$/="\0";
+# open log file
+open(LOG, ">> $Config{'log.file'}") or die;
+LOG->autoflush(1);
+
+print LOG Time_Stamp() . " SipBan start\n";
+
+# Check if exists the chain name or else create one
+my $rv = qx($ipt -S $Config{'iptables.chain'});
+if ($rv =~ /No chain\/target\/match/) {
+  $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
+}
+# search previous rules in the chain name
+else {
+    my $rule_time = $Start_Time + $Config{'timer.ban'};
+    print "Previous blocked Ip's\n";
+    my @iptables_list = split("\n",$rv);
+    foreach my $line (@iptables_list) {
+        my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
+        $ban_ip{$ip} = $rule_time;
+        print Time_Stamp() . " $ip\n";         
+        print LOG Time_Stamp() . " $ip\n";
+    }
+}
 
 while (1) { # Main loop #
     my $client;
@@ -449,7 +480,7 @@ while (1) { # Main loop #
             $select->add($client);
             Nonblock($client);
             $sessions{$client} = 1;
-            $outbuffer{$client} = "\nSipban (1.0)\n\n>";
+            $outbuffer{$client} = "\nSipban (1.0)\nsipban>";
         } 
         else {
             # read data
