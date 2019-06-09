@@ -100,7 +100,17 @@ my %Client_Handler = (
                 $outbuffer{$client} .= "$ip\n";
             }
         }
-
+    },
+    "uptime" => sub {
+        my $client = shift;
+        $outbuffer{$client} .= 'Uptime ' . Convert_To_Time(time() - $Start_Time). "\n";
+    },    
+    "wl" => sub {
+        my $client = shift;
+        $outbuffer{$client} .= '';
+        foreach my $ip (sort keys %white_list) {
+            $outbuffer{$client} .= "$ip\n";
+        }
     },
     "quit" => sub {
         my $client = shift;
@@ -218,6 +228,25 @@ sub Time_Stamp {
     $year = $year + 1900;
     $month++;
     return sprintf("\[%04d-%02d-%02d %02d:%02d:%02d\]",$year,$month,$day,$hour,$min,$sec);
+}
+
+sub Convert_To_Time {
+    my $time = shift;
+    my $days = int($time / 86400);
+    my $aux = $time % 86400;
+    my $hours = int($aux / 3600);
+       $aux = $aux % 3600;
+    my $minutes = int($aux / 60);
+    my $seconds = $time % 60;
+    my $result = "";
+    if ($days == 1) {
+        $result = "$days day ";
+    }
+    elsif ($days > 1) {
+        $result = "$days days ";
+    }
+    $result .= sprintf("%02d\:%02d\:%02d",$hours,$minutes,$seconds);
+    return $result;
 }
 
 sub Iptables_Block {
@@ -484,7 +513,7 @@ if (-e $Config{'iptables.white_list'}) {
         chomp;
         my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
         if ($ip) {
-            $white_list{$_};
+            $white_list{$_} = 1;
             print LOG Time_Stamp() . " WHITE LIST => $_\n";
         }
     }
