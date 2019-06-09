@@ -203,7 +203,7 @@ my %AMI_Handler = (
         },
     }, # Event
     "Response" => {
-        "success" => sub {
+        "Success" => sub {
             my $packet_content_ref = shift;
             if ($$packet_content_ref =~ /Ping\:\sPong/) {
                 print LOG Time_Stamp() . " Pong\n";               
