@@ -68,6 +68,7 @@ my %outbuffer    = ();
 my %ready        = ();
 my %sessions     = ();
 my %ban_ip       = ();
+my %white_list   = ();
 
 tie %ready, 'Tie::RefHash';
 my $event_str = "";
@@ -111,6 +112,19 @@ my %Client_Handler = (
         close($client);
     }, 
 );
+#----------------------------------------------------------------
+# [Pop] Developer Note: I declare the "exit" command Out of the
+# initial %Client_Handler Hash declaration to avoid perl compiler 
+# errors because i try to invoque a non declare hash into the 
+# same hash :P
+# 
+# The trick is receive the "exit" command and call the same 
+# rutine of the "quit" event.
+#----------------------------------------------------------------
+$Client_Handler{exit} = (sub {
+    my $client = shift;
+    $Client_Handler{quit}->($client);
+});
 
 #--------------------------------------------------------------------------------------
 # [Developer Note]: the process of each packet comming from the asteris manager (AMI),
@@ -148,12 +162,12 @@ my %AMI_Handler = (
         # LocalAddress: IPV4/UDP/10.211.55.8/5060
         # RemoteAddress: IPV4/UDP/10.211.55.2/59977
         #-----------------------------
-        "invalidaccountid" => sub {
+        "InvalidAccountID" => sub {
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
             my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
-            if ($service eq 'PJSIP') {
+            if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
                     Iptables_Block($remote_ip);
@@ -175,28 +189,48 @@ my %AMI_Handler = (
         # ReceivedChallenge: 79cca43d
         # ReceivedHash: 91801011d87fe17fca4aca4893f9920d
         #-----------------------------
-        "invalidpassword" => sub {
+        "InvalidPassword" => sub {
+            my $packet_content_ref = shift;
+            my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
+            my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
+            my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
+            if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
+                unless( exists($ban_ip{"$remote_ip"}) ) {
+                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    Iptables_Block($remote_ip);
+                }
+            }
         },
     }, # Event
+    "Response" => {
+        "success" => sub {
+            my $packet_content_ref = shift;
+            if ($$packet_content_ref =~ /Ping\:\sPong/) {
+                print LOG Time_Stamp() . " Pong\n";               
+            }
+        
+        }
+    } # Response
 );
 
 sub Time_Stamp {
     my ($sec, $min, $hour, $day,$month,$year) = (localtime( time() ))[0,1,2,3,4,5];
     $year = $year + 1900;
     $month++;
-    return sprintf("%04d-%02d-%02d %02d:%02d:%02d",$year,$month,$day,$hour,$min,$sec);
+    return sprintf("\[%04d-%02d-%02d %02d:%02d:%02d\]",$year,$month,$day,$hour,$min,$sec);
 }
 
 sub Iptables_Block {
     my $ip = shift;
-    # /sbin/iptables -t filter -D sipban-udp -j RETURN
-    # /sbin/iptables -t filter -A sipban-udp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
-    # /sbin/iptables -t filter -D sipban-udp -j RETURN
-    my $rv = qx($iptd);
-    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
-    $rv = qx($ipta);
-    print Time_Stamp() . " BLOCK => $ip\n";
-    print LOG Time_Stamp() . " BLOCK => $ip\n";
+    unless( exists($white_list{$ip}) ) {
+        # /sbin/iptables -t filter -D sipban-udp -j RETURN
+        # /sbin/iptables -t filter -A sipban-udp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
+        # /sbin/iptables -t filter -D sipban-udp -j RETURN
+        my $rv = qx($iptd);
+        $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
+        $rv = qx($ipta);
+        print LOG Time_Stamp() . " BLOCK => $ip\n";
+    }
 }
 
 sub Terminate {
@@ -387,7 +421,7 @@ sub Handle_AMI {
            $packet_content =~ s/\r//g;
            # Analyze each packet header and process according
            my ($ami_action, $event) = $packet_content =~ /^(.*?):\s(.*?)\n/isx;
-           $event = lc($event);
+           # $event = lc($event);
            if (exists($AMI_Handler{$ami_action}{$event})) {
                $AMI_Handler{$ami_action}{$event}->(\$packet_content);
            }              
@@ -442,6 +476,21 @@ LOG->autoflush(1);
 
 print LOG Time_Stamp() . " SipBan start\n";
 
+
+# Load white list from file to hash %white_list
+if (-e $Config{'iptables.whitelist'}) {
+    open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
+    while(<WL>) { # Read records
+        chomp;
+        my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+        if ($ip) {
+            $white_list{$_};
+            print LOG Time_Stamp() . " WHITE LIST => $_\n";
+        }
+    }
+    close (WL);
+}
+
 # Check if exists the chain name or else create one
 my $rv = qx($ipt -S $Config{'iptables.chain'});
 if ($rv =~ /No chain\/target\/match/) {
@@ -450,14 +499,15 @@ if ($rv =~ /No chain\/target\/match/) {
 # search previous rules in the chain name
 else {
     my $rule_time = $Start_Time + $Config{'timer.ban'};
-    print "Previous blocked Ip's\n";
     my @iptables_list = split("\n",$rv);
     foreach my $line (@iptables_list) {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
-        $ban_ip{$ip} = $rule_time;
-        print Time_Stamp() . " $ip\n";         
-        print LOG Time_Stamp() . " $ip\n";
+        if ($ip) {
+            $ban_ip{$ip} = $rule_time;
+            print LOG Time_Stamp() . " BLOCKED => $ip\n";
+        }
     }
+    @iptables_list = ();
 }
 
 while (1) { # Main loop #
@@ -516,6 +566,7 @@ while (1) { # Main loop #
     my $current_time = time();
     if ($current_time >= $Ping_Time) {
         $Ping_Time += $Config{'ami.ping'};
+        print LOG Time_Stamp() . " Ping\n";
         Send_To_Asterisk(\"Action: Ping\r\n\r\n");
     }
 
