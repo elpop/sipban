@@ -6,7 +6,7 @@
 # Creation date => 07/jun/2019                                      #
 #-------------------------------------------------------------------#
 # Info => This program is a server who make a connection with a     #
-#         asterisk server trough the TCP port 5038,take secrity     #
+#         asterisk server trough the TCP port 5038,take security    #
 #         Events and use iptables to block suspicious SIP registers #
 #-------------------------------------------------------------------#
 # This code are released under the GPL 3.0 License. Any change must #
@@ -51,8 +51,6 @@ $SIG{INT} = $SIG{TERM} = $SIG{HUP} = 'Terminate';
 
 # Iptables commands
 my $ipt = "$Config{'iptables.path'}" . 'iptables';
-my $iptd = "$ipt -t filter -D sipban-udp -j RETURN";
-my $ipta = "$ipt -t filter -A sipban-udp -j RETURN";
 
 # Open Socket connection to accept clients requests
 my $server = IO::Socket::INET->new(LocalPort => "$Config{'control.port'}",
@@ -82,7 +80,8 @@ my $HELP = "\nCommands:\n\n";
 $HELP .= "ban                => List blocked ip address\n";
 $HELP .= "ban {ip address}   => block ip address\n";
 $HELP .= "unban \[ip address\] => unblock ip address\n";
-$HELP .= "flush              => Clear rules on chain $Config{'iptables.chain'}\n";
+$HELP .= "flush              => Dump the blocked IP's and clear rules on chain $Config{'iptables.chain'}\n";
+$HELP .= "restore            => If exists a dump file restore the rules from it\n";
 $HELP .= "ping               => Send ping to Asterisk AMI\n";
 $HELP .= "uptime             => show the program uptime\n";
 $HELP .= "wl                 => show white list ip address\n";
@@ -156,6 +155,10 @@ my %Client_Handler = (
         Iptables_Erase_Chain();
         Iptables_Create_Chain();
         $outbuffer{$client} .= "iptables rules from chain $Config{'iptables.chain'} removed\n";
+    },
+    "restore" => sub {
+        my $client = shift;
+      
     },
     "help" => sub {
         my $client = shift;
@@ -349,9 +352,9 @@ sub Iptables_Block {
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
         # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
-        my $rv = qx($iptd);
+        my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
-        $rv = qx($ipta);
+        $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
         print LOG Time_Stamp() . " BLOCK => $ip\n";
     }
 }
@@ -585,6 +588,8 @@ else {
     }
     @iptables_list = ();
 }
+
+# Main Cycle
 
 while (1) { # Main loop #
     my $client;
