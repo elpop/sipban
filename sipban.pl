@@ -158,7 +158,7 @@ my %Client_Handler = (
     },
     "restore" => sub {
         my $client = shift;
-      
+        Restore_Rules($client);
     },
     "help" => sub {
         my $client = shift;
@@ -326,6 +326,32 @@ sub Dump_Ban_IPs {
         print DUMP "$ip\n";
     }    
     close (DUMP);
+}
+
+sub Restore_Rules {
+    my $client = shift;
+    if (-e $Config{'iptables.dump'}) {
+        open DUMP, "< $Config{'iptables.dump'}" || die "Can\'t open file\n";
+        print LOG T ime_Stamp() . " RESTORE RULES => $Config{'iptables.chain'}\n";
+        $outbuffer{$client} .= "Restore rules $Config{'iptables.chain'}\n"; 
+        while(<DUMP>) { # Read records
+            chomp;
+            my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+            if ($ip) {
+                unless( exists($ban_ip{"$ip"}) ) {
+                    $ban_ip{$ip} = time() + $Config{'timer.ban'};
+                    Iptables_Block($ip);
+                    $outbuffer{$client} .= "$ip\n";
+                }
+            }
+        }
+        $outbuffer{$client} .= "End restore rules\n"; 
+        close (DUMP);
+        unlink $Config{'iptables.dump'} or warn "Could not unlink $Config{'iptables.dump'}: $!";
+    }
+    else {
+        $outbuffer{$client} .= "no dump file to restore rules\n";  
+    }
 }
 
 sub Iptables_Create_Chain {
