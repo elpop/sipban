@@ -332,7 +332,7 @@ sub Restore_Rules {
     my $client = shift;
     if (-e $Config{'iptables.dump'}) {
         open DUMP, "< $Config{'iptables.dump'}" || die "Can\'t open file\n";
-        print LOG T ime_Stamp() . " RESTORE RULES => $Config{'iptables.chain'}\n";
+        print LOG Time_Stamp() . " RESTORE RULES => $Config{'iptables.chain'}\n";
         $outbuffer{$client} .= "Restore rules $Config{'iptables.chain'}\n"; 
         while(<DUMP>) { # Read records
             chomp;
@@ -367,8 +367,10 @@ sub Iptables_Create_Chain {
 
 sub Iptables_Erase_Chain {
     %ban_ip = ();
+    # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    my $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
+    my $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
 }
 
