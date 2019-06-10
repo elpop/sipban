@@ -370,10 +370,12 @@ sub Iptables_Erase_Chain {
         Iptables_UnBlock($ip);
     }
     %ban_ip = ();
+    # /sbin/iptables -t filter -D INPUT 1 -p udp --dport 5060 -j sipban-udp
     # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    #my $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
-    my $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
+    my $rv = qx($ipt -t filter -D INPUT 1 -p udp --dport 5060 -j $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
 }
 
