@@ -82,6 +82,7 @@ my $HELP = "\nCommands:\n\n";
 $HELP .= "ban                => List blocked ip address\n";
 $HELP .= "ban {ip address}   => block ip address\n";
 $HELP .= "unban \[ip address\] => unblock ip address\n";
+$HELP .= "flush              => Clear rules on chain $Config{'iptables.chain'}\n";
 $HELP .= "ping               => Send ping to Asterisk AMI\n";
 $HELP .= "uptime             => show the program uptime\n";
 $HELP .= "wl                 => show white list ip address\n";
@@ -148,6 +149,13 @@ my %Client_Handler = (
         else {
             $outbuffer{$client} .= "ip address missing\n";
         }
+    },
+    "flush" => sub {
+        my $client = shift;
+        Dump_Ban_IPs();
+        Iptables_Erase_Chain();
+        Iptables_Create_Chain();
+        $outbuffer{$client} .= "iptables rules from chain $Config{'iptables.chain'} removed\n";
     },
     "help" => sub {
         my $client = shift;
@@ -307,11 +315,39 @@ sub Convert_To_Time {
     return $result;
 }
 
+sub Dump_Ban_IPs {
+    open DUMP, "> $Config{'iptables.dump'}" || die "Can\'t open file\n";
+    print LOG Time_Stamp() . " DUMP => $Config{'iptables.chain'}\n";
+    print DUMP '# '. Time_Stamp() . "\n";
+    foreach my $ip (sort keys %ban_ip) {
+        print DUMP "$ip\n";
+    }    
+    close (DUMP);
+}
+
+sub Iptables_Create_Chain {
+    %ban_ip = ();
+    # /sbin/iptables -t filter -N sipban-udp
+    # /sbin/iptables -t filter -I INPUT 1 -p udp --dport 5060 -j sipban-udp
+    # /sbin/iptables -t filter -A sipban-udp -j RETURN
+    my $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -I INPUT 1 -p udp --dport 5060 -j $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -j RETURN);
+    print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
+}
+
+sub Iptables_Erase_Chain {
+    %ban_ip = ();
+    # /sbin/iptables -t filter -X sipban-udp
+    my $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
+    print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
+}
+
 sub Iptables_Block {
     my $ip = shift;
     unless( exists($white_list{$ip}) ) {
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
-        # /sbin/iptables -t filter -A sipban-udp -s ${@%:*} -j REJECT --reject-with icmp-port-unreachable
+        # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
         my $rv = qx($iptd);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
@@ -351,15 +387,6 @@ sub Nonblock {
             or die "Can't make socket nonblocking: $!\n";
 }
 
-#-----------------------------------------------#
-#  Function: Manager_Login                      #
-#-----------------------------------------------#
-# Objetive: Send Login Action to Asterisk API   #
-#   Params: none                                #
-#    Usage:                                     #
-#          Manager_Login();                     #
-#-----------------------------------------------#
-
 sub Manager_Login {
     my $command  = "Action: login\r\n";
     $command .= "Username: $Config{'ami.user'}\r\n";
@@ -367,15 +394,6 @@ sub Manager_Login {
     $command .= "Events: on\r\n\r\n";
     Send_To_Asterisk(\$command);
 }
-
-#--------------------------------------------------#
-# Function: Connect_To_Asterisk()                  #
-#--------------------------------------------------#
-# Objetive: connect program with asterisk manager  #
-#   Params: None                                   #
-#    Usage:                                        #
-#          Connect_To_Asterisk();                  #
-#--------------------------------------------------#
 
 sub Connect_To_Asterisk {
     my $host = shift;
@@ -395,15 +413,6 @@ sub Connect_To_Asterisk {
     	return 1;
     }
 }
-
-#--------------------------------------------------------#
-# Function: Send_To_Asterisk([message])                  #
-#--------------------------------------------------------#
-# Objetive: Send  message to Asterik manager             #
-#   Params: message, socket_handler                      #
-#    Usage:                                              #
-#          Send_To_Asterisk($message,$socket)            #
-#--------------------------------------------------------#
 
 sub Send_To_Asterisk {
     my $command_ref = shift;
@@ -429,18 +438,6 @@ sub Send_To_Asterisk {
         }
     }
 }
-
-#-------------------------------------------------------#
-#  Fuction: Trim([var|array])                           #
-#-------------------------------------------------------#
-# Objetive: Take out blank spaces in the rigth and left #
-#           of the field                                #
-#   Params: one string or array                         #
-#    Usage:                                             #
-#          $sample = Trim(" vs ");                      #
-#          $sample = Trim($foo);                        #
-#          @sample = Trim(@data);                       #
-#-------------------------------------------------------#
 
 sub Trim {
     my @out = @_;
@@ -535,15 +532,6 @@ sub Handle_AMI {
     delete $ready{$client};
 }
 
-#---------------------------------------------------------#
-#  Function: Clean_Connection([TCP handler])              #
-#---------------------------------------------------------#
-# Objetive: Close client TCP connection                   #
-#   Params: [TCP handler]                                 #
-#    Usage:                                               #
-#          Clean_Connection($client_handler);             #
-#---------------------------------------------------------#
-
 sub Clean_Connection {
     my $client_session = shift;
 
@@ -582,7 +570,7 @@ if (-e $Config{'iptables.white_list'}) {
 # Check if exists the chain name or else create one
 my $rv = qx($ipt -S $Config{'iptables.chain'});
 if ($rv =~ /No chain\/target\/match/) {
-  $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
+    Iptables_Create_Chain();
 }
 # search previous rules in the chain name
 else {
