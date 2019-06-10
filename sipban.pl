@@ -370,10 +370,11 @@ sub Iptables_Erase_Chain {
         Iptables_UnBlock($ip);
     }
     %ban_ip = ();
-    # /sbin/iptables -t filter -D INPUT 1 -p udp --dport 5060 -j sipban-udp
+    ## /sbin/iptables -t filter -D INPUT 1 -p udp --dport 5060 -j sipban-udp
+    # /sbin/iptables -t filter -D INPUT 1
     # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    my $rv = qx($ipt -t filter -D INPUT 1 -p udp --dport 5060 -j $Config{'iptables.chain'});
+    my $rv = qx($ipt -t filter -D INPUT 1);
     $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
@@ -384,7 +385,7 @@ sub Iptables_Block {
     unless( exists($white_list{$ip}) ) {
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
         # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
-        # /sbin/iptables -t filter -D sipban-udp -j RETURN
+        # /sbin/iptables -t filter -A sipban-udp -j RETURN
         my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
         $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
