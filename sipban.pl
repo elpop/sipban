@@ -39,6 +39,7 @@ die "Already runnig" if Proc::PID::File->running( dir=>"/tmp/", name => basename
 # Timers Info
 my $Start_Time = time();
 my $Ping_Time  = $Start_Time + $Config{'ami.ping'};
+my $Clean_Time = $Start_Time + $Config{'timer.clean'};
 
 # Socket handlers
 my $asterisk_handler;
@@ -97,7 +98,6 @@ print LOG Time_Stamp() . " SipBan Start\n";
 # [Developer Note]: the process of each client request is declared in the %Client_Handler
 #                   Hash and use references for speed operations in the event detection cycle.
 #----------------------------------------------------------------------------------------------
-
 my %Client_Handler = (
     "ban" => sub {
         my $client = shift;
@@ -210,25 +210,8 @@ $Client_Handler{exit} = (sub {
 #                   is declared in the %AMI_Handler Hash and use references for
 #                   speed operations in the event detection cycle.
 #--------------------------------------------------------------------------------------
-
 my %AMI_Handler = ( 
     "Event" => {
-        #-----------------------------
-        # Event: ChallengeResponseFailed
-        # Privilege: security,all
-        # EventTV: 2019-06-07T21:19:53.973+0000
-        # Severity: Error
-        # Service: PJSIP
-        # EventVersion: 1
-        # AccountID: 5500
-        # SessionID: 99260NzkzMWE4ZDkyMGE5ZWJlN2U0YjA4NGJkNmFiM2JiMmU
-        # LocalAddress: IPV4/UDP/10.211.55.8/5060
-        # RemoteAddress: IPV4/UDP/10.211.55.2/49169
-        # Challenge: 1559942393/fa9af96cd0edc616034019384a5365d9
-        # Response: d9a4942821c8a4148ebfb7b88ce7ae3e
-        # ExpectedResponse: 
-        #-----------------------------
-
         #-----------------------------
         # Event: InvalidAccountID
         # Privilege: security,all
@@ -400,6 +383,15 @@ sub Iptables_UnBlock {
     print LOG Time_Stamp() . " UNBLOCK => $ip\n";
 }
 
+sub Iptables_Prune_Block {
+    my $time = shift;
+    foreach my $ip (sort keys %ban_ip) {
+        if ($time >= $ban_ip{$ip}) {
+            Iptables_UnBlock($ip);
+        }
+    }
+}
+
 sub Terminate {
     my $client;
     # Clean up connections
@@ -453,7 +445,6 @@ sub Connect_To_Asterisk {
 
 sub Send_To_Asterisk {
     my $command_ref = shift;
-    
     unless ($$command_ref eq "" && $manager_connect_flag == 1) {
         #--------------------------------------------------------------------------------#
   	    # Developer Note: in some cases, the API Manager sufer of a requets override and #
@@ -495,7 +486,6 @@ sub Trim {
 #    Usage:                                               #
 #          Handle_Clients($client);                       #
 #---------------------------------------------------------#
-
 sub Handle_Clients {
     # requests are in $ready{$client}
     # send output to $outbuffer{$client}
@@ -531,7 +521,6 @@ sub Handle_Clients {
 #    Usage:                                               #
 #          Handle_Events($asterisk_handler);              #
 #---------------------------------------------------------#
-
 sub Handle_AMI {
     # requests are in $ready{$client}
     # send output to $outbuffer{$client}
@@ -683,7 +672,11 @@ while (1) { # Main loop #
         # print LOG Time_Stamp() . " Ping\n";
         Send_To_Asterisk(\"Action: Ping\r\n\r\n");
     }
-
+    if ($current_time >= $Clean_Time) {
+        $Clean_Time += $Config{'timer.clean'};
+        Iptables_Prune_Block($current_time);
+    }
+    
     # Buffers to flush?
     foreach $client ($select->can_write(1)) {
         # Skip this client if we have nothing to say
