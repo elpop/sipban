@@ -91,7 +91,7 @@ $HELP .= "exit/quit          => exit console session\n";
 open(LOG, ">> $Config{'log.file'}") or die;
 LOG->autoflush(1);
 
-print LOG Time_Stamp() . " SipBan start\n";
+print LOG Time_Stamp() . " SipBan Start\n";
 
 #----------------------------------------------------------------------------------------------
 # [Developer Note]: the process of each client request is declared in the %Client_Handler
@@ -336,6 +336,7 @@ sub Terminate {
     }
     close($server);                   # destroy socket handler
     close($asterisk_handler);         # destroy asterisk manager conection
+    print LOG Time_Stamp() . " SipBan Stop\n";
     close(LOG);
     exit(0);                          # Exit without error
 }
