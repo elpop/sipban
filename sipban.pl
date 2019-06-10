@@ -361,7 +361,7 @@ sub Iptables_Create_Chain {
     # /sbin/iptables -t filter -A sipban-udp -j RETURN
     my $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -I INPUT 1 -p udp --dport 5060 -j $Config{'iptables.chain'});
-    $rv = qx($ipt -t filter -A cat $Config{'iptables.chain'} -j RETURN);
+    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -j RETURN);
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
 }
 
