@@ -285,7 +285,7 @@ my %AMI_Handler = (
         "Success" => sub {
             my $packet_content_ref = shift;
             if ($$packet_content_ref =~ /Ping\:\sPong/) {
-                print LOG Time_Stamp() . " Pong\n";               
+               # print LOG Time_Stamp() . " Pong\n";               
             }
         
         }
@@ -673,7 +673,7 @@ while (1) { # Main loop #
     my $current_time = time();
     if ($current_time >= $Ping_Time) {
         $Ping_Time += $Config{'ami.ping'};
-        print LOG Time_Stamp() . " Ping\n";
+        # print LOG Time_Stamp() . " Ping\n";
         Send_To_Asterisk(\"Action: Ping\r\n\r\n");
     }
 
