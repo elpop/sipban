@@ -366,11 +366,14 @@ sub Iptables_Create_Chain {
 }
 
 sub Iptables_Erase_Chain {
+    foreach my $ip (sort keys %ban_ip) {
+        Iptables_UnBlock($ip);
+    }
     %ban_ip = ();
     # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    my $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
-    $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
+    #my $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
+    my $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
 }
 
