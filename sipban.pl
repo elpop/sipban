@@ -77,6 +77,22 @@ my $event_str = "";
 my $manager_connect_time = 0;
 my $manager_connect_flag = 1;
 
+# Help
+my $HELP = "\nCommands:\n\n";
+$HELP .= "ban                => List blocked ip address\n";
+$HELP .= "ban {ip address}   => block ip address\n";
+$HELP .= "unban \[ip address\] => unblock ip address\n";
+$HELP .= "ping               => Send ping to Asterisk AMI\n";
+$HELP .= "uptime             => show the program uptime\n";
+$HELP .= "wl                 => show white list ip address\n";
+$HELP .= "exit/quit          => exit console session\n";
+
+# open log file
+open(LOG, ">> $Config{'log.file'}") or die;
+LOG->autoflush(1);
+
+print LOG Time_Stamp() . " SipBan start\n";
+
 #----------------------------------------------------------------------------------------------
 # [Developer Note]: the process of each client request is declared in the %Client_Handler
 #                   Hash and use references for speed operations in the event detection cycle.
@@ -88,18 +104,60 @@ my %Client_Handler = (
         my $control = shift;
         $outbuffer{$client} .= '';
         if (exists($control->[1])) {
-           if (exists($ban_ip{$control->[1]})) {
-               $outbuffer{$client} .= "$control->[1] => $ban_ip{$control->[1]}\n";
-           }
-           else {
-               $outbuffer{$client} .= "No hay información de $control->[1]\n";
-           }
+            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+            if ($ip) {
+                if (exists($ban_ip{$ip})) {
+                    $outbuffer{$client} .= "$ip previously blocked\n";
+                }
+                else {
+                    $ban_ip{$ip} = time() + $Config{'timer.ban'};
+                    Iptables_Block($ip);                  
+                    $outbuffer{$client} .= "$ip block\n";
+                }
+            }
+            else {
+                $outbuffer{$client} .= "$ip don't seems like a valid address\n";
+            }
         }
         else {
             foreach my $ip (sort keys %ban_ip) {
                 $outbuffer{$client} .= "$ip\n";
             }
         }
+    },
+    "unban" => sub {
+        my $client = shift;
+        my $control = shift;
+        $outbuffer{$client} .= '';
+        if (exists($control->[1])) {
+            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+            if ($ip) {
+                if (exists($ban_ip{$ip})) {
+                    Iptables_UnBlock($ip);
+                    delete $ban_ip{$ip};
+                    $outbuffer{$client} .= "$ip unblocked\n";
+                }
+                else {
+                    $outbuffer{$client} .= "$ip is not previously blocked\n";
+                }
+            }
+            else {
+                $outbuffer{$client} .= "$ip don't seems like a valid address\n";
+            }
+        }
+        else {
+            $outbuffer{$client} .= "ip address missing\n";
+        }
+    },
+    "help" => sub {
+        my $client = shift;
+        $outbuffer{$client} .= $HELP;
+    },
+    "ping" => sub {
+        my $client = shift;
+        print LOG Time_Stamp() . " Ping\n";
+        Send_To_Asterisk(\"Action: Ping\r\n\r\n");
+        $outbuffer{$client} .= "Ping sent\n";
     },
     "uptime" => sub {
         my $client = shift;
@@ -260,6 +318,13 @@ sub Iptables_Block {
         $rv = qx($ipta);
         print LOG Time_Stamp() . " BLOCK => $ip\n";
     }
+}
+
+sub Iptables_UnBlock {
+    my $ip = shift;
+    # /sbin/iptables -D sipban-udp -s 88.88.88.88/32 -j REJECT
+    my $rv = qx($ipt -D $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
+    print LOG Time_Stamp() . " UNBLOCK => $ip\n";
 }
 
 sub Terminate {
@@ -499,13 +564,6 @@ sub Clean_Connection {
 #      Main block      #
 #======================#
 
-# open log file
-open(LOG, ">> $Config{'log.file'}") or die;
-LOG->autoflush(1);
-
-print LOG Time_Stamp() . " SipBan start\n";
-
-
 # Load white list from file to hash %white_list
 if (-e $Config{'iptables.white_list'}) {
     open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
@@ -559,7 +617,7 @@ while (1) { # Main loop #
             $select->add($client);
             Nonblock($client);
             $sessions{$client} = 1;
-            $outbuffer{$client} = "\nSipban (1.0)\nsipban>";
+            $outbuffer{$client} = "\nSipban\nuse 'help' for more commands\nsipban>";
         } 
         else {
             # read data
