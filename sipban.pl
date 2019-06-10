@@ -361,7 +361,7 @@ sub Iptables_Create_Chain {
     # /sbin/iptables -t filter -A sipban-udp -j RETURN
     my $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -I INPUT 1 -p udp --dport 5060 -j $Config{'iptables.chain'});
-    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -j RETURN);
+    $rv = qx($ipt -t filter -A cat $Config{'iptables.chain'} -j RETURN);
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
 }
 
@@ -605,22 +605,21 @@ if (-e $Config{'iptables.white_list'}) {
 }
 
 # Check if exists the chain name or else create one
-my $rv = qx($ipt -S $Config{'iptables.chain'});
-if ($rv =~ /No chain\/target\/match/) {
+my @Answer = qx($ipt -S $Config{'iptables.chain'});
+if ($#Answer < 0) {
     Iptables_Create_Chain();
 }
 # search previous rules in the chain name
 else {
     my $rule_time = $Start_Time + $Config{'timer.ban'};
-    my @iptables_list = split("\n",$rv);
-    foreach my $line (@iptables_list) {
+    foreach my $line (@Answer) {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
         if ($ip) {
             $ban_ip{$ip} = $rule_time;
             print LOG Time_Stamp() . " BLOCKED => $ip\n";
         }
     }
-    @iptables_list = ();
+    @Answer = ();
 }
 
 # Main Cycle
