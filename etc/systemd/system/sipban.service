@@ -1,0 +1,17 @@
+[Unit]
+Description=SIP Ban Service
+After=network.target
+
+[Service]
+Type=service
+User=root
+Group=root
+ExecStart=/usr/local/bin/sipban.pl
+Restart=always
+RestartSec=3
+
+# Prevent duplication of logs with color codes to /var/log/messages
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
