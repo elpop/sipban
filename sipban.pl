@@ -78,15 +78,15 @@ my $manager_connect_flag = 1;
 
 # Help
 my $HELP = "\nCommands:\n\n";
-$HELP .= "ban                => List blocked ip address\n";
-$HELP .= "ban {ip address}   => block ip address\n";
-$HELP .= "unban \[ip address\] => unblock ip address\n";
-$HELP .= "flush              => Dump the blocked IP's and clear rules on chain $Config{'iptables.chain'}\n";
-$HELP .= "restore            => If exists a dump file restore the rules from it\n";
-$HELP .= "ping               => Send ping to Asterisk AMI\n";
-$HELP .= "uptime             => show the program uptime\n";
-$HELP .= "wl                 => show white list ip address\n";
-$HELP .= "exit/quit          => exit console session\n";
+$HELP .= "block                => List blocked ip address\n";
+$HELP .= "block {ip address}   => block ip address\n";
+$HELP .= "unblock \[ip address\] => unblock ip address\n";
+$HELP .= "flush                => Dump the blocked IP's and clear rules on chain $Config{'iptables.chain'}\n";
+$HELP .= "restore              => If exists a dump file restore the rules from it\n";
+$HELP .= "ping                 => Send ping to Asterisk AMI\n";
+$HELP .= "uptime               => show the program uptime\n";
+$HELP .= "wl                   => show white list ip address\n";
+$HELP .= "exit/quit            => exit console session\n";
 
 # open log file
 open(LOG, ">> $Config{'log.file'}") or die;
@@ -99,7 +99,7 @@ print LOG Time_Stamp() . " SipBan Start\n";
 #                   Hash and use references for speed operations in the event detection cycle.
 #----------------------------------------------------------------------------------------------
 my %Client_Handler = (
-    "ban" => sub {
+    "block" => sub {
         my $client = shift;
         my $control = shift;
         $outbuffer{$client} .= '';
@@ -125,7 +125,7 @@ my %Client_Handler = (
             }
         }
     },
-    "unban" => sub {
+    "unblock" => sub {
         my $client = shift;
         my $control = shift;
         $outbuffer{$client} .= '';
