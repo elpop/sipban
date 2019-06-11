@@ -24,13 +24,20 @@ use Time::HiRes qw(usleep);
 use Proc::PID::File;
 use File::Basename;
 use Config::Simple;
-#use IPTables::ChainMgr;
 
-my %Config;
-Config::Simple->import_from('/etc/sipban.conf', \%Config) or die Config::Simple->error();
+if (defined($ARGV[0])) {
+    if ($ARGV[0] eq "-d") {
+        defined(my $pid = fork) or die "Can't Fork: $!";
+        exit if $pid;
+        setsid or die "Can't start a new session: $!";
+    }
+}
 
 # check PID File
 die "Already runnig" if Proc::PID::File->running( dir=>"/tmp/", name => basename("$0",".pl") );
+
+my %Config;
+Config::Simple->import_from('/etc/sipban.conf', \%Config) or die Config::Simple->error();
 
 #--------------------#
 # Control Parameters #
