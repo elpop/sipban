@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# chkconfig: 35 99 99
+# description: Sip Ban Service
+# processname: sipban.pl
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+DAEMON="/usr/local/bin/sipban.pl >> /var/log/sipban_daemon.log 2>&1"
+OPTIONS=-d
+RETVAL=0
+
+case "$1" in
+  start)
+	echo -n "Starting SIP Ban Service: "
+	daemon $DAEMON $OPTIONS
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/sipban.pl
+	;;
+  stop)
+	echo -n "Shutting down SIP Ban Service: "
+	killproc sipban.pl
+	RETVAL=$?
+
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/sipban.pl
+	;;
+  restart)
+	$0 stop
+	$0 start
+	RETVAL=$?
+	;;
+  reload)
+	echo -n "Reloading SIP Ban Service: "
+	killproc sipban.pl -HUP
+	RETVAL=$?
+	echo
+	;;
+  status)
+	status sipban.pl
+	RETVAL=$?
+	;;
+  *)
+	echo "Usage: sipban {start|stop|status|restart|reload}"
+	exit 1
+esac
+
+exit $RETVAL
+
