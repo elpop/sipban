@@ -129,7 +129,7 @@ my %Client_Handler = (
             }
         }
         else {
-            foreach my $ip (sort keys %ban_ip) {
+            foreach my $ip (sort { $ban_ip{$a} <=> $ban_ip{$b} } keys %ban_ip) {
                 $outbuffer{$client} .= Time_Stamp($ban_ip{$ip}) . " $ip\n";
             }
         }
