@@ -144,6 +144,10 @@ my %Client_Handler = (
                 if (exists($ban_ip{$ip})) {
                     Iptables_UnBlock($ip);
                     delete $ban_ip{$ip};
+                    my $hash_size = keys %ban_ip; 
+                    if ($hash_size <= 0) {
+                        $min_epoch = $max_epoch;      
+                    }
                     $outbuffer{$client} .= "$ip unblocked\n";
                 }
                 else {
@@ -241,9 +245,6 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    if ($min_epoch > $ban_ip{$remote_ip}) {
-                        $min_epoch = $ban_ip{$remote_ip};
-                    }
                     Iptables_Block($remote_ip);
                 }
             }
@@ -271,9 +272,6 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    if ($min_epoch > $ban_ip{$remote_ip}) {
-                        $min_epoch = $ban_ip{$remote_ip};
-                    }
                     Iptables_Block($remote_ip);
                 }
             }
@@ -354,6 +352,7 @@ sub Restore_Rules {
 
 sub Iptables_Create_Chain {
     %ban_ip = ();
+    $min_epoch = $max_epoch;
     # /sbin/iptables -t filter -N sipban-udp
     # /sbin/iptables -t filter -I INPUT 1 -p udp --dport 5060 -j sipban-udp
     # /sbin/iptables -t filter -A sipban-udp -j RETURN
@@ -368,6 +367,7 @@ sub Iptables_Erase_Chain {
         Iptables_UnBlock($ip);
     }
     %ban_ip = ();
+    $min_epoch = $max_epoch;
     ## /sbin/iptables -t filter -D INPUT 1 -p udp --dport 5060 -j sipban-udp
     # /sbin/iptables -t filter -D INPUT 1
     # /sbin/iptables -t filter -F sipban-udp
@@ -381,6 +381,9 @@ sub Iptables_Erase_Chain {
 sub Iptables_Block {
     my $ip = shift;
     unless( exists($white_list{$ip}) ) {
+        if ($min_epoch > $ban_ip{$ip}) {
+            $min_epoch = $ban_ip{$ip};
+        }
         # /sbin/iptables -t filter -D sipban-udp -j RETURN
         # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
         # /sbin/iptables -t filter -A sipban-udp -j RETURN
