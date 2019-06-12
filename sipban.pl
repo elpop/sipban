@@ -46,7 +46,6 @@ Config::Simple->import_from('/etc/sipban.conf', \%Config) or die Config::Simple-
 # Timers Info
 my $Start_Time = time();
 my $Ping_Time  = $Start_Time + $Config{'ami.ping'};
-my $Clean_Time = $Start_Time + $Config{'timer.clean'};
 # 9999-12-31 23:59:59 UTC this epoch could be higher, but is a nice date 
 my $max_epoch = 253402300799;
 my $min_epoch = $max_epoch;
