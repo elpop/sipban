@@ -143,8 +143,20 @@ Operation
          [2019-06-12 12:02:08] BLOCK => 77.247.109.243
          ...   
 
+   You can check the iptables rules with "iptables -S sipban-udp"
    
-   
+         [root@pbx ~]# iptables -S sipban-udp
+         -N sipban-udp
+         -A sipban-udp -s 221.121.138.167/32 -j DROP 
+         -A sipban-udp -s 77.247.110.158/32 -j DROP 
+         -A sipban-udp -s 102.165.39.82/32 -j DROP 
+         -A sipban-udp -s 102.165.32.36/32 -j DROP 
+         -A sipban-udp -s 102.165.49.34/32 -j DROP 
+         -A sipban-udp -s 77.247.109.243/32 -j DROP 
+         ...
+         -A sipban-udp -j RETURN 
+
+ 
    
    
    
