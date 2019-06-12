@@ -84,19 +84,29 @@ Install
       1) download file
       
          git clone https://github.com/elpop/sipban.git
+      
+      2) install perl dependecies:
          
-      2) Copy configuration files
+         a) Ubuntu/Debian
+         
+            sudo apt-get install libproc-pid-file-perl libconfig-simple-perl
+         
+         b) Redhat/CentOS/Fedora
+         
+            sudo dnf install perl-Proc-PID-File perl-Config-Simple
+         
+      3) Copy configuration files
       
          cd sipban
          cp sipban.pl /usr/local/bin/.
          cp etc/sipban.conf /etc/.
          cp etc/sipban.wl /etc/.
        
-      3) Edit and add /etc/asterisk/manager.conf acording our sample on sipban/etc/asterisk/manager.conf
+      4) Edit and add /etc/asterisk/manager.conf acording our sample on sipban/etc/asterisk/manager.conf
          
          use " asterisk -rx'manager reload' " after change the manager configuration file
          
-      4) install the launch scripts
+      5) install the launch scripts
       
          a) for init.d 
          
