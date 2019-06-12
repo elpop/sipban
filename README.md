@@ -63,7 +63,7 @@ Description
    
    The sipban.dump file is a temp one to save the ip's and ban timers in case of mantinance.
    
-   You can reach via Telnet with the port 4451 (you can change in the "control-port" pararmeter).
+   You can reach via Telnet with the port 4451 (you can change in the "control->port" pararmeter).
     
 Install
    
@@ -98,8 +98,50 @@ Install
             systemctl enable sipban
             service sipban start
             
+Operation
+
+   The service are fully automatic, but you can control through the port 4451 (or another defined on /etc/sipban.conf), v.g.:
+   
+         [root@pbx ~]# telnet localhost 4451
+         Trying ::1...
+         telnet: connect to address ::1: Connection refused
+         Trying 127.0.0.1...
+         Connected to localhost.
+         Escape character is '^]'.
+
+         Sipban
+         use 'help' for more commands
+         sipban>
          
-            
+         
+         sipban>help
+
+         Commands:
+
+         block                => List blocked ip address
+         block {ip address}   => block ip address
+         unblock [ip address] => unblock ip address
+         flush                => Dump the blocked IP's and clear rules on chain sipban-udp
+         restore              => If exists a dump file restore the rules from it
+         ping                 => Send ping to Asterisk AMI
+         uptime               => show the program uptime
+         wl                   => show white list ip address
+         exit/quit            => exit console session
+
+         sipban>
+
+   The log files reside on the file "/var/log/sipban.log"
+   
+         [root@pbx ~]# tail -f /var/log/sipban.log 
+         [2019-06-12 12:01:50] SipBan Start
+         [2019-06-12 12:01:50] WHITE LIST => 127.0.0.1
+         [2019-06-12 12:01:55] BLOCK => 221.121.138.167
+         [2019-06-12 12:01:59] BLOCK => 77.247.110.158
+         [2019-06-12 12:02:01] BLOCK => 102.165.39.82
+         [2019-06-12 12:02:06] BLOCK => 102.165.32.36
+         [2019-06-12 12:02:07] BLOCK => 102.165.49.34
+         [2019-06-12 12:02:08] BLOCK => 77.247.109.243
+         ...   
 
    
    
