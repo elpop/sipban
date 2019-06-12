@@ -130,7 +130,7 @@ my %Client_Handler = (
         }
         else {
             foreach my $ip (sort keys %ban_ip) {
-                $outbuffer{$client} .= "$ip\n";
+                $outbuffer{$client} .= Time_Stamp($ban_ip{$ip}) . " $ip\n";
             }
         }
     },
@@ -289,7 +289,9 @@ my %AMI_Handler = (
 );
 
 sub Time_Stamp {
-    my ($sec, $min, $hour, $day,$month,$year) = (localtime( time() ))[0,1,2,3,4,5];
+    my $time = shift;
+    $time = time() unless($time);
+    my ($sec, $min, $hour, $day,$month,$year) = (localtime( $time ))[0,1,2,3,4,5];
     $year = $year + 1900;
     $month++;
     return sprintf("\[%04d-%02d-%02d %02d:%02d:%02d\]",$year,$month,$day,$hour,$min,$sec);
