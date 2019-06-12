@@ -1,18 +1,31 @@
 #!/usr/bin/perl
-#===================================================================#
-# Program => sipban.pl (In Perl 5.0)                  version 0.0.1 #
-#===================================================================#
-# Autor         => Fernando "El Pop" Romo        (pop@cofradia.org) #
-# Creation date => 07/jun/2019                                      #
-#-------------------------------------------------------------------#
-# Info => This program is a server who make a connection with a     #
-#         asterisk server trough the TCP port 5038,take security    #
-#         Events and use iptables to block suspicious SIP registers #
-#-------------------------------------------------------------------#
-# This code are released under the GPL 3.0 License. Any change must #
-# be report to the authors                                          #
-#              (c) 2019 - Fernando Romo / Incuvox                   #
-#===================================================================#
+#======================================================================#
+# Program => sipban.pl (In Perl 5.0)                     version 0.0.1 #
+#======================================================================#
+# Autor => Fernando "El Pop" Romo                   (pop@cofradia.org) #
+# Creation date => 07/jun/2019                                         #
+#----------------------------------------------------------------------#
+# Info => This program is a server who make a connection with a        #
+#         asterisk server trough the TCP port 5038,take security       #
+#         Events and use iptables to block suspicious SIP registers    #
+#----------------------------------------------------------------------#
+#        This code are released under the GPL 3.0 License.             #
+#                                                                      #
+#                     (c) 2019 - Fernando Romo                         #
+#                                                                      #
+# This program is free software: you can redistribute it and/or modify #
+# it under the terms of the GNU General Public License as published by #
+# the Free Software Foundation, either version 3 of the License, or    #
+# (at your option) any later version.                                  #
+#                                                                      #
+# This program is distributed in the hope that it will be useful, but  #  
+# WITHOUT ANY WARRANTY; without even the implied warranty of           #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU    #
+# General Public License for more details.                             #
+#                                                                      #
+# You should have received a copy of the GNU General Public License    #
+# along with this program. If not, see <https://www.gnu.org/licenses/> #
+#======================================================================#
 use strict;
 use POSIX;
 use IO::Socket;
@@ -96,6 +109,12 @@ $HELP .= "ping                 => Send ping to Asterisk AMI\n";
 $HELP .= "uptime               => show the program uptime\n";
 $HELP .= "wl                   => show white list ip address\n";
 $HELP .= "exit/quit            => exit console session\n";
+
+my $LICENSE  = "SIPban  Copyright (C) 2019  Fernando 'El Pop' Romo\n\n";
+$LICENSE .= "This program comes with ABSOLUTELY NO WARRANTY;\n";
+$LICENSE .= "for details https://www.gnu.org/licenses/gpl-3.0.en.html\n";
+$LICENSE .= "This is free software, and you are welcome to redistribute\n";
+$LICENSE .= "it under certain conditions.";
 
 # open log file
 open(LOG, ">> $Config{'log.file'}") or die;
@@ -664,7 +683,7 @@ while (1) { # Main loop #
             $select->add($client);
             Nonblock($client);
             $sessions{$client} = 1;
-            $outbuffer{$client} = "\nSipban\nuse 'help' for more commands\nsipban>";
+            $outbuffer{$client} = "\n$LICENSE\n\nuse 'help' for more commands\nsipban>";
         } 
         else {
             # read data
