@@ -47,6 +47,9 @@ Config::Simple->import_from('/etc/sipban.conf', \%Config) or die Config::Simple-
 my $Start_Time = time();
 my $Ping_Time  = $Start_Time + $Config{'ami.ping'};
 my $Clean_Time = $Start_Time + $Config{'timer.clean'};
+# 9999-12-31 23:59:59 UTC this epoch could be higher, but is a nice date 
+my $max_epoch = 253402300799;
+my $min_epoch = $max_epoch;
 
 # Socket handlers
 my $asterisk_handler;
@@ -239,6 +242,9 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    if ($min_epoch > $ban_ip{$remote_ip}) {
+                        $min_epoch = $ban_ip{$remote_ip};
+                    }
                     Iptables_Block($remote_ip);
                 }
             }
@@ -266,6 +272,9 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    if ($min_epoch > $ban_ip{$remote_ip}) {
+                        $min_epoch = $ban_ip{$remote_ip};
+                    }
                     Iptables_Block($remote_ip);
                 }
             }
@@ -395,7 +404,17 @@ sub Iptables_Prune_Block {
     foreach my $ip (sort keys %ban_ip) {
         if ($time >= $ban_ip{$ip}) {
             Iptables_UnBlock($ip);
+            delete $ban_ip{$ip};
         }
+        else {
+            if ($ban_ip{$ip} < $min_epoch) {
+                $min_epoch = $ban_ip{$ip};
+            }
+        }
+    }
+    my $hash_size = keys %ban_ip; 
+    if ($hash_size <= 0) {
+        $min_epoch = $max_epoch;      
     }
 }
 
@@ -673,14 +692,15 @@ while (1) { # Main loop #
         }
     }
     
+    # Timer operations
     my $current_time = time();
     if ($current_time >= $Ping_Time) {
         $Ping_Time += $Config{'ami.ping'};
         # print LOG Time_Stamp() . " Ping\n";
         Send_To_Asterisk(\"Action: Ping\r\n\r\n");
     }
-    if ($current_time >= $Clean_Time) {
-        $Clean_Time += $Config{'timer.clean'};
+    # Clean on block time lapse
+    if ($current_time >= $min_epoch) {
         Iptables_Prune_Block($current_time);
     }
     
