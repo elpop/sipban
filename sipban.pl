@@ -319,7 +319,7 @@ sub Dump_Ban_IPs {
     print LOG Time_Stamp() . " DUMP => $Config{'iptables.chain'}\n";
     print DUMP '# '. Time_Stamp() . "\n";
     foreach my $ip (sort keys %ban_ip) {
-        print DUMP "$ip\n";
+        print DUMP "$ip,$ban_ip{$ip}\n";
     }    
     close (DUMP);
 }
@@ -332,10 +332,11 @@ sub Restore_Rules {
         $outbuffer{$client} .= "Restore rules $Config{'iptables.chain'}\n"; 
         while(<DUMP>) { # Read records
             chomp;
-            my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+            my ($saved_ip,$saved_time) = split(",",$_);
+            my ($ip) = $saved_ip =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
             if ($ip) {
                 unless( exists($ban_ip{"$ip"}) ) {
-                    $ban_ip{$ip} = time() + $Config{'timer.ban'};
+                    $ban_ip{$ip} = $saved_time;
                     Iptables_Block($ip);
                     $outbuffer{$client} .= "$ip\n";
                 }
