@@ -64,18 +64,8 @@ Description
    The sipban.dump file is a temp one to save the ip's and ban timers in case of mantinance.
    
    You can reach via Telnet with the port 4451 (you can change in the "control-port" pararmeter).
-   
-   we have the scripts to launch the services in:
-   
-         for init.d =>  /etc/init.d/sipban
-         
-            or
-         
-         for systemd => /etc/systemd/system/sipban.service 
-         
-   Copy to the sipban/etc according of your system. and active with chkconfig (init.d) or systemctl (systemd)
-   
-   Install
+    
+Install
    
    the service use iptables, you need the "root" user of your system.
    
@@ -92,19 +82,23 @@ Description
        
       3) Edit and add /etc/asterisk/manager.conf acording our sample on sipban/etc/asterisk/manager.conf
          
-         use asterisk -rx'manager reload' after change the manager configuration file
+         use " asterisk -rx'manager reload' " after change the manager configuration file
          
       4) install the launch scripts
       
          a) for init.d 
          
             cp etc/init.d/sipban /etc/init.d/.
-         
-                     
+            chkconfig --level 345 sipban on
+            /etc/init.d/sipban start
+                    
          b) for systemd
          
             cp etc/systemd/system/sipban.service /etc/systemd/system/.
+            systemctl enable sipban
+            service sipban start
             
+         
             
 
    
