@@ -340,7 +340,7 @@ sub Restore_Rules {
                 unless( exists($ban_ip{"$ip"}) ) {
                     $ban_ip{$ip} = $saved_time;
                     Iptables_Block($ip);
-                    $outbuffer{$client} .= "$ip\n";
+                    $outbuffer{$client} .= Time_Stamp($ban_ip{$ip}) ." $ip\n";
                 }
             }
         }
