@@ -178,3 +178,8 @@ Operation
          ...
          -A sipban-udp -j RETURN 
 
+To-do
+
+   - IPv6 support
+   - IP Class blocking
+
