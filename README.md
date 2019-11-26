@@ -89,11 +89,11 @@ Install
          
          a) Ubuntu/Debian
          
-            sudo apt-get install libproc-pid-file-perl libconfig-simple-perl
+            sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libtime-hires-perl
          
          b) Redhat/CentOS/Fedora
          
-            sudo dnf install perl-Proc-PID-File perl-Config-Simple
+            sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Time-HiRes
          
       3) Copy configuration files
       
