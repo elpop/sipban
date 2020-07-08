@@ -634,7 +634,7 @@ if (-e $Config{'iptables.white_list'}) {
     open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
     while(<WL>) { # Read records
         chomp;
-        my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+        my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?)/;
         if ($ip) {
             $white_list{$_} = 1;
             print LOG Time_Stamp() . " WHITE LIST => $_\n";
