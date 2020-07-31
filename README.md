@@ -18,7 +18,7 @@
 
 ## Description
 
-The program use AMI (Asterisk manager Interface)i, with the security profile, obtain events related to SIP authorization on PJSIP and SIP channels.
+The program use AMI (Asterisk manager Interface, with the security profile, obtain events related to SIP authorization on PJSIP and SIP channels.
 
 In the file **/etc/asterisk/manager.conf** we put this configuration:
 
@@ -36,7 +36,7 @@ read = security
 write = system,command
 ```
 
-The /etc/sipban.conf contains the parameters of the service:
+The **/etc/sipban.conf** contains the parameters of the service:
 
 ```   
 # SipBan Configuration File
@@ -74,7 +74,7 @@ The file is sefl explanatory. only take in count the "timer->ban" parameter are 
    
 The "iptables->rule" option is how iptables respond to the attack, you can choose "REJECT" or "DROP"
    
-The White List is on /etc/sipban.wl. This file contains the ip address you don't want to block (one ip per line). You can change the location modify the sipban configuration file.
+The White List is on **/etc/sipban.wl**. This file contains the ip address you don't want to block (one ip per line). You can change the location modify the sipban configuration file.
    
 The sipban.dump file is a temp one to save the ip's and ban timers in case of mantinance.
    
@@ -82,7 +82,7 @@ You can reach via Telnet with the port 4451 (you can change in the "control->por
     
 ## Install
    
-The service use iptables, you need the "root" user of your system
+The service use iptables, you need the "**root**" user of your system
 
 1. Download file
   
@@ -113,7 +113,7 @@ The service use iptables, you need the "root" user of your system
      cp etc/sipban.wl /etc/.
     ```
     
-4. Edit and add /etc/asterisk/manager.conf acording our sample on sipban/etc/asterisk/manager.conf
+4. Edit and add **/etc/asterisk/manager.conf** acording our sample on **sipban/etc/asterisk/manager.conf**
          
     Use "**asterisk -rx'manager reload'**" after change the manager configuration file.
          
@@ -137,7 +137,7 @@ The service use iptables, you need the "root" user of your system
         
 ## Operation
 
-The service are fully automatic, but you can control through the port 4451 (or another defined on /etc/sipban.conf), v.g.:
+The service are fully automatic, but you can control through the port 4451 (or another defined on **/etc/sipban.conf**), v.g.:
    
 ```   
 [root@pbx ~]# telnet localhost 4451
