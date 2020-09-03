@@ -4,8 +4,6 @@
 
 Program to stop SIP scanning attacks using live monitoring of the Asterisk AMI security Events and use iptables to block remote ip address.
 
-Tested with Asterisk version 16.3.0 (C) 1999 - 2018, Digium, Inc. and others.
-
 The program use AMI (Asterisk manager Interface, with the security profile, obtain events related to SIP authorization on PJSIP and SIP channels.
 
 Tested with Asterisk version 16.3.0 (C) 1999 - 2018, Digium, Inc. and others.
