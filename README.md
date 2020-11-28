@@ -189,6 +189,11 @@ The service use iptables, you need the "**root**" user of your system
     -A sipban-udp -j RETURN 
     ```
 
+## Docker
+
+Our friend Federico Pereira, make the docker image of SipBan, the instructions are on the README.md on the docker directory.
+
+
 ## To-do
 
    - IPv6 support
