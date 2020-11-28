@@ -1,0 +1,19 @@
+version: '3.3'
+services:
+
+  sipban:
+    environment:
+        - "TZ=America/Mexico_City"
+        - "AMI_PORT=5038"
+        - "AMI_USER=sipban"
+        - "AMI_PASS=getout"
+        - "AMI_HOST=localhost"
+        - "SIPBANPORT=4451"
+    privileged: true
+    container_name: sipban
+    image: cnsoluciones/sipban:latest
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./user-data/logs/sipban:/var/log/sipban
+    restart: always
+    network_mode: host
