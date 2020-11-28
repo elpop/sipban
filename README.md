@@ -191,7 +191,7 @@ The service use iptables, you need the "**root**" user of your system
 
 ## Docker
 
-Our friend Federico Pereira, make the docker image of SipBan, the instructions are on the README.md on the docker directory.
+Our friend Federico Pereira (lord.basex@gmail.com), make the docker image of SipBan, the instructions are on the README.md on the docker directory.
 
 
 ## To-do
