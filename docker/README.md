@@ -2,7 +2,7 @@
 
 ## DOCKER RUN
 ```bash
-docker run --privileged -itd --name sipban --net=host --env AMI_PORT=5038 --env AMI_USER=sipban --env AMI_PASS=getout --env AMI_HOST=localhost cnsoluciones/sipban
+docker run --privileged -itd --name sipban --net=host --env AMI_PORT=5038 --env AMI_USER=sipban --env AMI_PASS=getout --env AMI_HOST=localhost sipban/sipban:latest
 ```
 
 ## TERMINAL
