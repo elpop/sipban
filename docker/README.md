@@ -12,7 +12,7 @@ https://hub.docker.com/r/sipban/sipban
 
    Fernando Romo (pop@cofradia.org)
 
-## Collaborator
+## Contributors
 
   Federico Pereira (lord.basex@gmail.com)
 
