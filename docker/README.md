@@ -6,13 +6,14 @@ The program use AMI (Asterisk manager Interface, with the security profile, obta
 
 Tested with Asterisk version 16.3.0 (C) 1999 - 2018, Digium, Inc. and others.
 
-https://github.com/elpop/sipban/tree/master/docker
+https://hub.docker.com/r/sipban/sipban
 
 ## Author
 
    Fernando Romo (pop@cofradia.org)
 
 ## Collaborator
+
   Federico Pereira (lord.basex@gmail.com)
 
 ## License
