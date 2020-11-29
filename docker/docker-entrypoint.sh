@@ -6,6 +6,8 @@ fi
 
 if [ $IPTABLES_RULE = "REJECT" ]; then
   rule="REJECT --reject-with icmp-port-unreachable"
+fi
+
 if [ $IPTABLES_RULE = "DROP" ]; then
  rule="DROP"
 fi
@@ -33,7 +35,7 @@ ban = ${TIMER_BAN}
 [iptables]
 path  = "/sbin/"
 chain = "${IPTABLES_CHAIN}"
-rule  = ${rule}
+rule  = "${rule}"
 white_list = "/etc/sipban/sipban.wl"
 dump = "/etc/sipban/sipban.dump"
 
