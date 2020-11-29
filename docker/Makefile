@@ -1,5 +1,5 @@
 DOCKER ?= docker
-TARGET ?= cnsoluciones/sipban
+TARGET ?= sipban/sipban:1.0
 
 all:
 	@echo "Building ${TARGET}"
