@@ -5,7 +5,8 @@ LABEL author="Fernando Romo <pop@cofradia.org>"
 ENV SIPBAN_PORT=4451 \
     TZ='America/Mexico_City' \
     AMI_PING=600 \
-    TIMER_BAN=86400 \ 
+    TIMER_BAN=86400 \
+    IPTABLES_LEGACY='true' \
     IPTABLES_CHAIN='sipban-udp' \
     IPTABLES_RULE=REJECT
 
@@ -20,7 +21,7 @@ RUN apt update && apt-get -y install \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/elpop/sipban.git /usr/src/sipban \
-    && mkdir -p /etc/sipban \ 
+    && mkdir -p /etc/sipban \
     && cd /usr/src/sipban \
     && cp sipban.pl /usr/local/bin \
     && cp etc/sipban.conf /etc/. \
