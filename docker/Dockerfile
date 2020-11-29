@@ -27,11 +27,11 @@ RUN git clone https://github.com/elpop/sipban.git /usr/src/sipban \
     && cp etc/sipban.wl /etc/sipban/.  \
     && chmod +x /usr/local/bin/sipban.pl \
     && mkdir -p /var/log/sipban \
+    && cp -fra /etc/sipban /etc/sipban.org \
     && rm -rf /usr/src/sipban
 
 VOLUME [ "/etc/sipban" ,"/var/log/sipban" ]
 
-#RUN DOCKER SCRIPT
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
