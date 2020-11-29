@@ -19,7 +19,7 @@ ping = ${AMI_PING}
 
 # Port to send commands
 [control]
-port = "${SIPBANPORT}"
+port = "${SIPBAN_PORT}"
 
 # Timers
 [timer]
