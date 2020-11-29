@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "$(ls -A /etc/sipban)" ]; then
+  cp -fra /etc/sipban.org/* /etc/sipban
+fi
+
 if [ $IPTABLES_RULE = "REJECT" ]; then
   rule="REJECT --reject-with icmp-port-unreachable"
 if [ $IPTABLES_RULE = "DROP" ]; then
