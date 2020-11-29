@@ -12,6 +12,7 @@ services:
         - "SIPBAN_PORT=4451"
         - "AMI_PING=600"
         - "TIMER_BAN=86400"
+        - "IPTABLES_LEGACY=true"
         - "IPTABLES_CHAIN=sipban-udp"
         - "IPTABLES_RULE=REJECT"
     privileged: true
