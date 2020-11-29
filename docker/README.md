@@ -24,6 +24,23 @@ https://www.gnu.org/licenses/gpl-3.0.en.html
 See LICENSE.txt
 ```
 
+## Environment Variables
+
+ * AMI_PORT = 5038
+ * AMI_USER = sipban
+ * AMI_PASS = getout
+ * AMI_HOST = localhost
+ 
+## Environment Variables (optional)
+
+ * TZ = America/Mexico_City"
+ * SIPBAN_PORT = 4451"
+ * AMI_PING = 600
+ * TIMER_BAN = 86400
+ * IPTABLES_LEGACY = true o falte // default true
+ * IPTABLES_CHAIN = sipban-udp
+ * IPTABLES_RULE = REJECT or DROP
+
 ## DOCKER RUN
 ```bash
 docker run --privileged -itd --name sipban --net=host --env AMI_PORT=5038 --env AMI_USER=sipban --env AMI_PASS=getout --env AMI_HOST=localhost sipban/sipban:latest
@@ -51,6 +68,7 @@ services:
         - "SIPBAN_PORT=4451"
         - "AMI_PING=600"
         - "TIMER_BAN=86400"
+        - "IPTABLES_LEGACY=true"
         - "IPTABLES_CHAIN=sipban-udp"
         - "IPTABLES_RULE=REJECT"
     privileged: true
