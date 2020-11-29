@@ -2,7 +2,7 @@ FROM debian:10
 LABEL maintainer="Federico Pereira <lord.basex@gmail.com>"
 LABEL author="Fernando Romo <pop@cofradia.org>"
 
-ENV SIPBANPORT=4451 \
+ENV SIPBAN_PORT=4451 \
     TZ='America/Mexico_City' \
     AMI_PING=600 \
     TIMER_BAN=86400 \ 
