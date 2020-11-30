@@ -260,7 +260,7 @@ my %AMI_Handler = (
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
-            my ($remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/UDP\/(.*?)\/.*?\n/isx;
+            my ($prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/(UDP|WSS)\/(.*?)\/.*?\n/isx;
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
