@@ -18,6 +18,7 @@ RUN apt update && apt-get -y install \
     telnet \
     net-tools \
     iptables \
+    whois \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/elpop/sipban.git /usr/src/sipban \
