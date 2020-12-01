@@ -15,10 +15,10 @@ RUN apt update && apt-get -y install \
     libproc-pid-file-perl \
     libconfig-simple-perl \
     libtime-hires-perl \
+    libnet-whois-ip-perl \
     telnet \
     net-tools \
     iptables \
-    whois \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/elpop/sipban.git /usr/src/sipban \
