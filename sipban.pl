@@ -218,7 +218,7 @@ my %Client_Handler = (
                 $outbuffer{$client} .= "WHOIS information: $ip\n\n";
                 my $response = ();
                 my $status = eval { $response = whoisip_query($ip) } ;
-                unless($status) {
+                if ($response) {
                     foreach my $resp(sort keys(%{$response}) ) {
                         $outbuffer{$client} .= "$resp $response->{$resp} \n";
                     }
