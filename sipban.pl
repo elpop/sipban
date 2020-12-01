@@ -32,6 +32,7 @@ use IO::Socket;
 use IO::Select;
 use Socket;
 use Fcntl;
+use Net::Whois::IP qw(whoisip_query);
 use Tie::RefHash;
 use Time::HiRes qw(usleep);
 use Proc::PID::File;
@@ -107,6 +108,7 @@ $HELP .= "flush                => Dump the blocked IP's and clear rules on chain
 $HELP .= "restore              => If exists a dump file restore the rules from it\n";
 $HELP .= "ping                 => Send ping to Asterisk AMI\n";
 $HELP .= "uptime               => show the program uptime\n";
+$HELP .= "whois                => show the WHOIS info of a given ip\n";
 $HELP .= "wl                   => show white list ip address\n";
 $HELP .= "exit/quit            => exit console session\n";
 
@@ -205,7 +207,34 @@ my %Client_Handler = (
     "uptime" => sub {
         my $client = shift;
         $outbuffer{$client} .= 'Uptime ' . Convert_To_Time(time() - $Start_Time). "\n";
-    },    
+    },
+    "whois" => sub {
+        my $client = shift;
+        my $control = shift;
+        $outbuffer{$client} .= '';
+        if (exists($control->[1])) {
+            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+            if ($ip) {
+                $outbuffer{$client} .= "WHOIS information: $ip\n\n";
+                my $response = ();
+                my $status = eval { $response = whoisip_query($ip) } ;
+                unless($status) {
+                    foreach my $resp(sort keys(%{$response}) ) {
+                        $outbuffer{$client} .= "$resp $response->{$resp} \n";
+                    }
+                }
+                else {
+                    $outbuffer{$client} .=  "No response from WHOIS servers\n";
+                }
+            }
+            else {
+                $outbuffer{$client} .= "$ip don't seems like a valid address\n";
+            }
+        }
+        else {
+            $outbuffer{$client} .= "ip address missing\n";
+        }
+    },
     "wl" => sub {
         my $client = shift;
         $outbuffer{$client} .= '';
