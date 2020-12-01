@@ -153,6 +153,7 @@ The service use iptables, you need the "**root**" user of your system
     restore              => If exists a dump file restore the rules from it
     ping                 => Send ping to Asterisk AMI
     uptime               => show the program uptime
+    whois                => show the WHOIS info of a given ip
     wl                   => show white list ip address
     exit/quit            => exit console session
         
