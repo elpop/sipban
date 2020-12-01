@@ -10,7 +10,7 @@ ENV SIPBAN_PORT=4451 \
     IPTABLES_CHAIN='sipban-udp' \
     IPTABLES_RULE=REJECT
 
-RUN apt update && apt-get -y install \
+RUN apt-get update && apt-get -y install \
     git \
     libproc-pid-file-perl \
     libconfig-simple-perl \
