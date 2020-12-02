@@ -106,6 +106,9 @@ The service use iptables, you need the "**root**" user of your system
     [iptables]
     path  = "/sbin/"
     chain = "sipban-udp"
+    # to block udp port 5060, you can block all but test
+    # with caution to avoid lost total access to your system.
+    scope = "-p udp --dport 5060"
     rule  = "REJECT --reject-with icmp-port-unreachable"
     #rule  = "DROP"
     white_list = "/etc/sipban.wl"
