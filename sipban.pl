@@ -38,6 +38,10 @@ use Time::HiRes qw(usleep);
 use Proc::PID::File;
 use File::Basename;
 use Config::Simple;
+use Tie::Cache;
+
+my %cache = ();
+tie %cache, 'Tie::Cache', 1000, { Debug => 0 };
 
 if (defined($ARGV[0])) {
     if ($ARGV[0] eq "-d") {
@@ -324,6 +328,40 @@ my %AMI_Handler = (
                 }
             }
         },
+        #Event: ChallengeSent
+        #Privilege: security,all
+        #EventTV: 2022-01-27T18:47:34.606-0300
+        #Severity: Informational
+        #Service: SIP
+        #EventVersion: 1
+        #AccountID: sip:127.0.0.1:9
+        #SessionID: 0x7fe8480d4100
+        #LocalAddress: IPV4/UDP/149.28.237.109/5060
+        #RemoteAddress: IPV4/UDP/127.0.0.1/9
+        #Challenge: 43ccaa48
+        "ChallengeSent" => sub {
+            my $packet_content_ref = shift;
+            my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
+            my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
+            my ($prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/(.*?)\/(.*?)\/.*?\n/isx;
+            if ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
+                my $now = time();
+                my ($count,$cached) = getCacheMatch($remote_ip);
+                if($count != undef) {
+                    $count++;
+                    $cache{$remote_ip} = [ $count, $cached ];
+                    if($count>$Config{'flood.count'}) {
+                        unless( exists($ban_ip{"$remote_ip"}) ) {
+                            $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                            Iptables_Block($remote_ip);
+                        }
+                    }
+                } else {
+                    $count=1;
+                    $cache{$remote_ip} = [ $count, $now ];
+                }
+            }
+        },
     }, # Event
     "Response" => {
         "Success" => sub {
@@ -468,6 +506,26 @@ sub Iptables_Prune_Block {
     my $hash_size = keys %ban_ip; 
     if ($hash_size <= 0) {
         $min_epoch = $max_epoch;      
+    }
+}
+
+sub getCacheMatch {
+    my $check_value = shift;
+    my $timeout = $Config{'flood.interval'};
+
+    # Check cache for a match.
+    my ($result, $time_cached);
+    my $now = time();
+    my $time_cached;
+    my $cache_entry = $cache{$check_value};
+    if ($cache_entry) {
+        ($result, $time_cached) = @{$cache_entry};
+        if ($now - $time_cached > $timeout) {
+            delete $cache{$check_value};
+            return undef;
+        } else {
+            return ($result, $time_cached);
+       }
     }
 }
 

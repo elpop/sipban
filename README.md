@@ -23,13 +23,13 @@ The service use iptables, you need the "**root**" user of your system
     a) Ubuntu/Debian
          
     ```
-    sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl
+    sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
     ```
          
     b) Redhat/CentOS/Fedora
     
     ```     
-    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes
+    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
     ```
          
 3. Copy configuration files
@@ -117,11 +117,18 @@ The service use iptables, you need the "**root**" user of your system
     # Log file
     [log]
     file = "/var/log/sipban.log"
+
+    # Invite Flood Attacks
+    [flood]
+    count=30
+    interval=10
     ```
     
     The file is sefl explanatory. only take in count the "timer->ban" parameter are seconds (default 86400 = 1 day).
    
     The "iptables->rule" option is how iptables respond to the attack, you can choose "REJECT" or "DROP"
+
+    The flood section will block based on the number (count) of invites received of a period of (inteval) seconds. In the default configuration if there are 30 SIP Invites from the same IP on the course of 30 seconds it will block the offender.
    
 3. The White List is on **/etc/sipban.wl**. This file contains the ip address you don't want to block (one ip per line). You can change the location modify the sipban configuration file.
    
