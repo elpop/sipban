@@ -39,6 +39,7 @@ use Proc::PID::File;
 use File::Basename;
 use Config::Simple;
 use Tie::Cache;
+use NetAddr::IP;
 
 my %cache = ();
 tie %cache, 'Tie::Cache', 1000, { Debug => 0 };
@@ -467,9 +468,24 @@ sub Iptables_Erase_Chain {
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
 }
 
+sub Ip_Check {
+    my $ip = shift;
+    $ip=NetAddr::IP->new($ip);
+    print " CHECK => $ip\n";
+    my $is_in_wl=0;
+    foreach my $wl_address (keys %white_list)
+    {
+        if ($ip->within(NetAddr::IP->new($wl_address)))
+        {
+		return 1;
+	}
+    }
+    return undef;
+}
+
 sub Iptables_Block {
     my $ip = shift;
-    unless( exists($white_list{$ip}) ) {
+    unless( Ip_Check($ip) ) {
         if ($min_epoch > $ban_ip{$ip}) {
             $min_epoch = $ban_ip{$ip};
         }
