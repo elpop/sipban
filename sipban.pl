@@ -328,17 +328,19 @@ my %AMI_Handler = (
                 }
             }
         },
-        #Event: ChallengeSent
-        #Privilege: security,all
-        #EventTV: 2022-01-27T18:47:34.606-0300
-        #Severity: Informational
-        #Service: SIP
-        #EventVersion: 1
-        #AccountID: sip:127.0.0.1:9
-        #SessionID: 0x7fe8480d4100
-        #LocalAddress: IPV4/UDP/149.28.237.109/5060
-        #RemoteAddress: IPV4/UDP/127.0.0.1/9
-        #Challenge: 43ccaa48
+        #-----------------------------
+        # Event: ChallengeSent
+        # Privilege: security,all
+        # EventTV: 2022-01-27T18:47:34.606-0300
+        # Severity: Informational
+        # Service: SIP
+        # EventVersion: 1
+        # AccountID: sip:127.0.0.1:9
+        # SessionID: 0x7fe8480d4100
+        # LocalAddress: IPV4/UDP/149.28.237.109/5060
+        # RemoteAddress: IPV4/UDP/127.0.0.1/9
+        # Challenge: 43ccaa48
+        #-----------------------------
         "ChallengeSent" => sub {
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
@@ -479,7 +481,7 @@ sub Iptables_Block {
         my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
         $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
-        print LOG Time_Stamp() . " BLOCK => $ip\n";
+        print LOG Time_Stamp() . " BLOCKED => $ip\n";
     }
 }
 
