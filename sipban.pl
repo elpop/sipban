@@ -481,7 +481,7 @@ sub Iptables_Block {
         my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
         $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
-        print LOG Time_Stamp() . " BLOCKED => $ip ($msg)\n";
+        print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
     }
 }
 
@@ -744,7 +744,7 @@ else {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
         if ($ip) {
             $ban_ip{$ip} = $rule_time;
-            print LOG Time_Stamp() . " BLOCKED => $ip\n";
+            print LOG Time_Stamp() . " BLOCK => $ip (Sipban previous block)\n";
         }
     }
     @Answer = ();
