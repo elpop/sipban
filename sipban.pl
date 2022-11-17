@@ -146,7 +146,7 @@ my %Client_Handler = (
                 }
                 else {
                     $ban_ip{$ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($ip);                  
+                    Iptables_Block($ip,'Manual block');                  
                     $outbuffer{$client} .= "$ip block\n";
                 }
             }
@@ -298,7 +298,7 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($remote_ip);
+                    Iptables_Block($remote_ip,'Invalid Account');
                 }
             }
         },
@@ -325,21 +325,23 @@ my %AMI_Handler = (
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($remote_ip);
+                    Iptables_Block($remote_ip,'Invalid Password');
                 }
             }
         },
-        #Event: ChallengeSent
-        #Privilege: security,all
-        #EventTV: 2022-01-27T18:47:34.606-0300
-        #Severity: Informational
-        #Service: SIP
-        #EventVersion: 1
-        #AccountID: sip:127.0.0.1:9
-        #SessionID: 0x7fe8480d4100
-        #LocalAddress: IPV4/UDP/149.28.237.109/5060
-        #RemoteAddress: IPV4/UDP/127.0.0.1/9
-        #Challenge: 43ccaa48
+        #-----------------------------
+        # Event: ChallengeSent
+        # Privilege: security,all
+        # EventTV: 2022-01-27T18:47:34.606-0300
+        # Severity: Informational
+        # Service: SIP
+        # EventVersion: 1
+        # AccountID: sip:127.0.0.1:9
+        # SessionID: 0x7fe8480d4100
+        # LocalAddress: IPV4/UDP/149.28.237.109/5060
+        # RemoteAddress: IPV4/UDP/127.0.0.1/9
+        # Challenge: 43ccaa48
+        #-----------------------------
         "ChallengeSent" => sub {
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
@@ -354,7 +356,7 @@ my %AMI_Handler = (
                     if($count>$Config{'flood.count'}) {
                         unless( exists($ban_ip{"$remote_ip"}) ) {
                             $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                            Iptables_Block($remote_ip);
+                            Iptables_Block($remote_ip,'Challenge Sent');
                         }
                     }
                 } else {
@@ -426,7 +428,7 @@ sub Restore_Rules {
             if ($ip) {
                 unless( exists($ban_ip{"$ip"}) ) {
                     $ban_ip{$ip} = $saved_time;
-                    Iptables_Block($ip);
+                    Iptables_Block($ip, 'Sipban previous block');
                     $outbuffer{$client} .= Time_Stamp($ban_ip{$ip}) ." $ip\n";
                 }
             }
@@ -484,7 +486,7 @@ sub Ip_Check {
 }
 
 sub Iptables_Block {
-    my $ip = shift;
+    my ($ip, $msg) = @_;
     unless( Ip_Check($ip) ) {
         if ($min_epoch > $ban_ip{$ip}) {
             $min_epoch = $ban_ip{$ip};
@@ -495,7 +497,7 @@ sub Iptables_Block {
         my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
         $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
         $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
-        print LOG Time_Stamp() . " BLOCK => $ip\n";
+        print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
     }
 }
 
@@ -758,7 +760,7 @@ else {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
         if ($ip) {
             $ban_ip{$ip} = $rule_time;
-            print LOG Time_Stamp() . " BLOCKED => $ip\n";
+            print LOG Time_Stamp() . " BLOCK => $ip (Sipban previous block)\n";
         }
     }
     @Answer = ();
@@ -866,3 +868,5 @@ while (1) { # Main loop #
 } # End of main loop
 
 #------------- End of main block ----------
+
+
