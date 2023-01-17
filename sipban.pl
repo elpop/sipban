@@ -466,9 +466,11 @@ sub Iptables_Create_Chain {
     $min_epoch = $max_epoch;
     # /sbin/iptables -t filter -N sipban-udp
     # /sbin/iptables -t filter -I INPUT 1 -p udp --dport 5060 -j sipban-udp
+    # /sbin/iptables -t filter -I INPUT 2 -p tcp -m multiport --dports 5060,8088,8089 -j sipban-udp
     # /sbin/iptables -t filter -A sipban-udp -j RETURN
     my $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -I INPUT 1 $Config{'iptables.scope'} -j $Config{'iptables.chain'});
+    $rv = qx($ipt -t filter -I INPUT 2 $Config{'iptables.scope_tcp'} -j $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -j RETURN);
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
 }
@@ -478,9 +480,11 @@ sub Iptables_Create_Chain6 {
     $min_epoch = $max_epoch;
     # /sbin/ip6tables -t filter -N sipban-udp
     # /sbin/ip6tables -t filter -I INPUT 1 -p udp --dport 5060 -j sipban-udp
+    # /sbin/ip6tables -t filter -I INPUT 2 -p tcp -m multiport --dports 5060,8088,8089 -j sipban-udp
     # /sbin/ip6tables -t filter -A sipban-udp -j RETURN
     my $rv = qx($ip6t -t filter -N $Config{'iptables.chain'});
     $rv = qx($ip6t -t filter -I INPUT 1 $Config{'iptables.scope'} -j $Config{'iptables.chain'});
+    $rv = qx($ip6t -t filter -I INPUT 2 $Config{'iptables.scope_tcp'} -j $Config{'iptables.chain'});
     $rv = qx($ip6t -t filter -A $Config{'iptables.chain'} -j RETURN);
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
 }
@@ -491,16 +495,16 @@ sub Iptables_Erase_Chain {
     }
     %ban_ip = ();
     $min_epoch = $max_epoch;
-    # /sbin/iptables -t filter -D INPUT -p udp --dport 5060 -j sipban-udp
+    # for rule_num in $(iptables -L INPUT --line-numbers | grep sipban-udp | cut -d' ' -f1 | sort -gr); do iptables -t filter -D INPUT $rule_num ; done
     # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    my $rv = qx($ipt -t filter -D INPUT $Config{'iptables.scope'} -j $Config{'iptables.chain'});
+    my $rv = qx(for rule_num in \$( $ipt -L INPUT --line-numbers | grep $Config{'iptables.chain'} | cut -d' ' -f1 | sort -gr); do $ipt -t filter -D INPUT \$rule_num ; done);
     $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
-    # /sbin/ip6tables -t filter -D INPUT -p udp --dport 5060 -j sipban-udp
+    # for rule_num in $(ip6tables -L INPUT --line-numbers | grep sipban-udp | cut -d' ' -f1 | sort -gr); do ip6tables -t filter -D INPUT $rule_num ; done
     # /sbin/ip6tables -t filter -F sipban-udp
     # /sbin/ip6tables -t filter -X sipban-udp
-    my $rv = qx($ip6t -t filter -D INPUT $Config{'iptables.scope'} -j $Config{'iptables.chain'});
+    my $rv = qx(for rule_num in \$( $ip6t -L INPUT --line-numbers | grep $Config{'iptables.chain'} | cut -d' ' -f1 | sort -gr); do $ip6t -t filter -D INPUT \$rule_num ; done);
     $rv = qx($ip6t -t filter -F $Config{'iptables.chain'});
     $rv = qx($ip6t -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
