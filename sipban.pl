@@ -222,8 +222,9 @@ my %Client_Handler = (
         my $control = shift;
         $outbuffer{$client} .= '';
         if (exists($control->[1])) {
-            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip) {
+            my $ip=NetAddr::IP->new($control->[1]);
+            unless ( $ip eq undef ) {
+                $ip = $ip->addr();
                 $outbuffer{$client} .= "WHOIS information: $ip\n\n";
                 my $response = ();
                 my $status = eval { $response = whoisip_query($ip) } ;
@@ -443,8 +444,9 @@ sub Restore_Rules {
         while(<DUMP>) { # Read records
             chomp;
             my ($saved_ip,$saved_time) = split(",",$_);
-            my ($ip) = $saved_ip =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip) {
+            my $ip=NetAddr::IP->new($saved_ip);
+            unless ( $ip eq undef ) {
+                $ip = $ip->addr();
                 unless( exists($ban_ip{"$ip"}) ) {
                     $ban_ip{$ip} = $saved_time;
                     Iptables_Block($ip, 'Sipban previous block');
