@@ -147,8 +147,9 @@ my %Client_Handler = (
                     $outbuffer{$client} .= "$ip previously blocked\n";
                 }
                 else {
-                    $ban_ip{$ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($ip,'Manual block');                  
+                    if( Iptables_Block($ip,'Manual block') eq 1 ){
+                        $ban_ip{$ip} = time() + $Config{'timer.ban'};
+                    }
                     $outbuffer{$client} .= "$ip block\n";
                 }
             }
@@ -307,8 +308,9 @@ my %AMI_Handler = (
 		$remote_ip = NetAddr::IP->new($remote_ip);
 		$remote_ip = $remote_ip->addr();
                 unless( exists($ban_ip{"$remote_ip"}) ) {
-                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($remote_ip,'Invalid Account');
+                    if( Iptables_Block($remote_ip,'Invalid Account') eq 1 ){
+                        $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    }
                 }
             }
         },
@@ -339,8 +341,9 @@ my %AMI_Handler = (
 		$remote_ip = NetAddr::IP->new($remote_ip);
 		$remote_ip = $remote_ip->addr();
                 unless( exists($ban_ip{"$remote_ip"}) ) {
-                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                    Iptables_Block($remote_ip,'Invalid Password');
+                    if( Iptables_Block($remote_ip,'Invalid Password') eq 1 ){
+                        $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    }
                 }
             }
         },
@@ -375,8 +378,9 @@ my %AMI_Handler = (
                     $cache{$remote_ip} = [ $count, $cached ];
                     if($count>$Config{'flood.count'}) {
                         unless( exists($ban_ip{"$remote_ip"}) ) {
-                            $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
-                            Iptables_Block($remote_ip,'Challenge Sent');
+                            if( Iptables_Block($remote_ip,'Challenge Sent') eq 1 ){
+                                $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                            }
                         }
                     }
                 } else {
@@ -448,8 +452,9 @@ sub Restore_Rules {
             unless ( $ip eq undef ) {
                 $ip = $ip->addr();
                 unless( exists($ban_ip{"$ip"}) ) {
-                    $ban_ip{$ip} = $saved_time;
-                    Iptables_Block($ip, 'Sipban previous block');
+                    if( Iptables_Block($ip,'Sipban previous block') eq 1 ){
+                        $ban_ip{$ip} = $saved_time;
+                    }
                     $outbuffer{$client} .= Time_Stamp($ban_ip{$ip}) ." $ip\n";
                 }
             }
@@ -515,12 +520,12 @@ sub Iptables_Erase_Chain {
 sub Ip_Check {
     my $ip = shift;
     $ip=NetAddr::IP->new($ip);
-    print LOG Time_Stamp() . " CHECK IN WL => $ip\n";
     my $is_in_wl=0;
     foreach my $wl_address (keys %white_list)
     {
         if ($ip->within(NetAddr::IP->new($wl_address)))
         {
+		print LOG Time_Stamp() . " IN WHITELIST => $ip\n";
 		return 1;
 	}
     }
@@ -529,7 +534,7 @@ sub Ip_Check {
 
 sub Iptables_Block {
     my ($ip, $msg) = @_;
-    unless( Ip_Check($ip) ) {
+    if( Ip_Check($ip) eq undef ) {
         if ($min_epoch > $ban_ip{$ip}) {
             $min_epoch = $ban_ip{$ip};
         }
@@ -552,6 +557,10 @@ sub Iptables_Block {
 	    $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
 	}
         print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
+	return 1;
+    } else {
+        print LOG Time_Stamp() . " NO BLOCK => $ip ($msg)\n";
+        return undef;
     }
 }
 
