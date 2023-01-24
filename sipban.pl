@@ -525,7 +525,6 @@ sub Ip_Check {
     {
         if ($ip->within(NetAddr::IP->new($wl_address)))
         {
-		print LOG Time_Stamp() . " IN WHITELIST => $ip\n";
 		return 1;
 	}
     }
@@ -559,7 +558,7 @@ sub Iptables_Block {
         print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
 	return 1;
     } else {
-        print LOG Time_Stamp() . " NO BLOCK => $ip ($msg)\n";
+        print LOG Time_Stamp() . " NO BLOCK => $ip IN WHITELIST ($msg)\n";
         return undef;
     }
 }
