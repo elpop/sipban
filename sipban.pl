@@ -858,6 +858,13 @@ else {
     @Answer2 = ();
 }
 
+# Regenerate Chains in case some were removed or scopes were changed
+Dump_Ban_IPs();
+Iptables_Erase_Chain();
+Iptables_Create_Chain();
+Iptables_Create_Chain6();
+Restore_Rules();
+
 # Main Cycle
 
 while (1) { # Main loop #
