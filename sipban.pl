@@ -389,6 +389,40 @@ my %AMI_Handler = (
                 }
             }
         },
+        #-----------------------------
+        # Event : SuccessfulAuth
+        # EventTV : 2023-05-10T19:11:06.382+0400
+        # Severity : Informational
+        # Service : PJSIP
+        # EventVersion : 1
+        # AccountID : 2019
+        # SessionID : 0_122972204@172.16.57.153
+        # LocalAddress : IPV4/UDP/172.16.56.30/5060
+        # RemoteAddress : IPV4/UDP/172.16.57.153/5060
+        # UsingPassword : 1
+        #-----------------------------
+        "SuccessfulAuth" => sub {
+            my $packet_content_ref = shift;
+            my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
+            my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
+            my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
+            if( ! defined $remote_ip ){
+                return;
+            }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
+                my ($count,$cached) = getCacheMatch($remote_ip);
+                $remote_ip = NetAddr::IP->new($remote_ip);
+                $remote_ip = $remote_ip->addr();
+                if($count != undef) {
+                    $count--;
+                    if($count == 0){
+                        delete $cache{$remote_ip};
+                    }else{
+                        $cache{$remote_ip} = [ $count, $cached ];
+                    }
+                    # print LOG Time_Stamp() . " SucessfulAuth by IPV$ipvx/$prot/$remote_ip, Failure count : $count\n";
+                }
+            }
+        },
     }, # Event
     "Response" => {
         "Success" => sub {
