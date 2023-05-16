@@ -140,9 +140,9 @@ my %Client_Handler = (
         my $control = shift;
         $outbuffer{$client} .= '';
         if (exists($control->[1])) {
-	    my $ip = NetAddr::IP->new($control->[1]);
-	    if ( $ip ne undef ) {
-		$ip = $ip->addr();
+            my $ip = NetAddr::IP->new($control->[1]);
+            if ( $ip ne undef ) {
+                $ip = $ip->addr();
                 if (exists($ban_ip{$ip})) {
                     $outbuffer{$client} .= "$ip previously blocked\n";
                 }
@@ -168,9 +168,9 @@ my %Client_Handler = (
         my $control = shift;
         $outbuffer{$client} .= '';
         if (exists($control->[1])) {
-	    my $ip = NetAddr::IP->new($control->[1]);
-	    if ( $ip ne undef ) {
-		$ip = $ip->addr();
+            my $ip = NetAddr::IP->new($control->[1]);
+            if ( $ip ne undef ) {
+                $ip = $ip->addr();
                 if (exists($ban_ip{$ip})) {
                     Iptables_UnBlock($ip);
                     delete $ban_ip{$ip};
@@ -302,11 +302,11 @@ my %AMI_Handler = (
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
             my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
             if( ! defined $remote_ip ){
-		print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
-		return;
-	    }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
-		$remote_ip = NetAddr::IP->new($remote_ip);
-		$remote_ip = $remote_ip->addr();
+                print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
+                return;
+            }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
+                $remote_ip = NetAddr::IP->new($remote_ip);
+                $remote_ip = $remote_ip->addr();
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     if( Iptables_Block($remote_ip,'Invalid Account') eq 1 ){
                         $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
@@ -335,11 +335,11 @@ my %AMI_Handler = (
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
             my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
             if( ! defined $remote_ip ){
-		print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
-		return;
-	    }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
-		$remote_ip = NetAddr::IP->new($remote_ip);
-		$remote_ip = $remote_ip->addr();
+                print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
+                return;
+            }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
+                $remote_ip = NetAddr::IP->new($remote_ip);
+                $remote_ip = $remote_ip->addr();
                 unless( exists($ban_ip{"$remote_ip"}) ) {
                     if( Iptables_Block($remote_ip,'Invalid Password') eq 1 ){
                         $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
@@ -365,15 +365,15 @@ my %AMI_Handler = (
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
             my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
-	    if( ! defined $remote_ip ){
-		print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
-		return;
-	    }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
+            if( ! defined $remote_ip ){
+                print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
+                return;
+            }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
                 my $now = time();
                 my ($count,$cached) = getCacheMatch($remote_ip);
-		$remote_ip = NetAddr::IP->new($remote_ip);
-		$remote_ip = $remote_ip->addr();
-		if($count != undef) {
+                $remote_ip = NetAddr::IP->new($remote_ip);
+                $remote_ip = $remote_ip->addr();
+                if($count != undef) {
                     $count++;
                     $cache{$remote_ip} = [ $count, $cached ];
                     if($count>$Config{'flood.count'}) {
@@ -525,8 +525,8 @@ sub Ip_Check {
     {
         if ($ip->within(NetAddr::IP->new($wl_address)))
         {
-		return 1;
-	}
+            return 1;
+        }
     }
     return undef;
 }
@@ -537,24 +537,24 @@ sub Iptables_Block {
         if ($min_epoch > $ban_ip{$ip}) {
             $min_epoch = $ban_ip{$ip};
         }
-	$ip = NetAddr::IP->new($ip);
-	if( $ip->version() eq 6 ){
-	    $ip = $ip->addr();
-	    # /sbin/ip6tables -t filter -D sipban-udp -j RETURN
-	    # /sbin/ip6tables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp6-port-unreachable
-	    # /sbin/ip6tables -t filter -A sipban-udp -j RETURN
-	    my $rv = qx($ip6t -t filter -D sipban-udp -j RETURN);
-	    $rv = qx($ip6t -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule6'});
-	    $rv = qx($ip6t -t filter -A sipban-udp -j RETURN);
-	}else{
-	    $ip = $ip->addr();
-	    # /sbin/iptables -t filter -D sipban-udp -j RETURN
-	    # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
-	    # /sbin/iptables -t filter -A sipban-udp -j RETURN
-	    my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
-	    $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
-	    $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
-	}
+        $ip = NetAddr::IP->new($ip);
+        if( $ip->version() eq 6 ){
+            $ip = $ip->addr();
+            # /sbin/ip6tables -t filter -D sipban-udp -j RETURN
+            # /sbin/ip6tables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp6-port-unreachable
+            # /sbin/ip6tables -t filter -A sipban-udp -j RETURN
+            my $rv = qx($ip6t -t filter -D sipban-udp -j RETURN);
+            $rv = qx($ip6t -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule6'});
+            $rv = qx($ip6t -t filter -A sipban-udp -j RETURN);
+        }else{
+            $ip = $ip->addr();
+            # /sbin/iptables -t filter -D sipban-udp -j RETURN
+            # /sbin/iptables -t filter -A sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
+            # /sbin/iptables -t filter -A sipban-udp -j RETURN
+            my $rv = qx($ipt -t filter -D sipban-udp -j RETURN);
+            $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
+            $rv = qx($ipt -t filter -A sipban-udp -j RETURN);
+        }
         print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
 	return 1;
     } else {
@@ -567,13 +567,13 @@ sub Iptables_UnBlock {
     my $ip = shift;
     $ip = NetAddr::IP->new($ip);
     if( $ip->version() eq 6 ){
-	$ip = $ip->addr();
-	# /sbin/ip6tables -D sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp6-port-unreachable
-	my $rv = qx($ip6t -D $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule6'});
+        $ip = $ip->addr();
+        # /sbin/ip6tables -D sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp6-port-unreachable
+        my $rv = qx($ip6t -D $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule6'});
     }else{
-	$ip = $ip->addr();
-	# /sbin/iptables -D sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
-	my $rv = qx($ipt -D $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
+        $ip = $ip->addr();
+        # /sbin/iptables -D sipban-udp -s 88.88.88.88 -j REJECT --reject-with icmp-port-unreachable
+        my $rv = qx($ipt -D $Config{'iptables.chain'} -s $ip -j $Config{'iptables.rule'});
     }
     print LOG Time_Stamp() . " UNBLOCK => $ip\n"
 }
@@ -664,7 +664,7 @@ sub Connect_To_Asterisk {
         return 0;
     } 
     else {
-    	return 1;
+        return 1;
     }
 }
 
@@ -672,8 +672,8 @@ sub Send_To_Asterisk {
     my $command_ref = shift;
     unless ($$command_ref eq "" && $manager_connect_flag == 1) {
         #--------------------------------------------------------------------------------#
-  	    # Developer Note: in some cases, the API Manager sufer of a requets override and #
-  	    #                 is necesary put a little time wait between requests.           #
+        # Developer Note: in some cases, the API Manager sufer of a requets override and #
+        #                 is necesary put a little time wait between requests.           #
         #--------------------------------------------------------------------------------#
         # usleep 200_000;
         # if the socket exists send data, if not, turn on reconnection flag
@@ -700,7 +700,7 @@ sub Trim {
          s/\s+$//g;
     }
     return wantarray ? @out : $out[0];
-}                	        
+}
 
 #---------------------------------------------------------#
 #  Function: Handle_Clients([Client TCP handler])         #
@@ -794,7 +794,7 @@ sub Clean_Connection {
 
     # Check if the connection to Asterisk Die and turn the reconnection Flag
     if ($client_session eq $asterisk_handler) {
-    	$manager_connect_flag =1;
+        $manager_connect_flag =1;
     } 
     $select->remove($client_session);
     close($client_session);
@@ -808,12 +808,12 @@ sub Clean_Connection {
 if (-e $Config{'iptables.white_list'}) {
     open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
     while(<WL>) { # Read records
-	chomp;
-	my $ip = NetAddr::IP->new($_);
-	unless ( $ip eq undef ) {
-	    $white_list{$_} = 1;
-	    print LOG Time_Stamp() . " WHITE LIST => $_\n";
-	}
+        chomp;
+        my $ip = NetAddr::IP->new($_);
+        unless ( $ip eq undef ) {
+            $white_list{$_} = 1;
+            print LOG Time_Stamp() . " WHITE LIST => $_\n";
+        }
     }
     close (WL);
 }
@@ -830,8 +830,8 @@ else {
     foreach my $line (@Answer) {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
         if ($ip) {
-	    $ip = NetAddr::IP->new($ip);
-	    $ip = $ip->addr();
+            $ip = NetAddr::IP->new($ip);
+            $ip = $ip->addr();
             $ban_ip{$ip} = $rule_time;
             print LOG Time_Stamp() . " BLOCK => $ip (Sipban previous block)\n";
         }
@@ -849,8 +849,8 @@ else {
     foreach my $line (@Answer2) {
         my ($ip) = $line =~ /-A\s$Config{'iptables.chain'}\s-s\s(.*?)\/.*?\s-j\s/;
         if ($ip) {
-	    $ip = NetAddr::IP->new($ip);
-	    $ip = $ip->addr();
+            $ip = NetAddr::IP->new($ip);
+            $ip = $ip->addr();
             $ban_ip{$ip} = $rule_time;
             print LOG Time_Stamp() . " BLOCK => $ip (Sipban previous block)\n";
         }
@@ -957,7 +957,7 @@ while (1) { # Main loop #
         } else {
             Clean_Connection($client);
             next;
-	    }
+        }
     }
     
     # Out of band data?
@@ -967,5 +967,4 @@ while (1) { # Main loop #
 } # End of main loop
 
 #------------- End of main block ----------
-
-
+# vim: tabstop=4 softtabstop=4 shiftwidth=4 expandtab smarttab
