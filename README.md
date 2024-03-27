@@ -29,7 +29,7 @@ The service use iptables, you need the "**root**" user of your system
     b) Redhat/CentOS/Fedora
     
     ```     
-    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
+    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache perl-NetAddr-IP
     ```
          
 3. Copy configuration files
