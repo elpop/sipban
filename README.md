@@ -15,7 +15,7 @@ The service use iptables, you need the "**root**" user of your system
 1. Download file
   
     ```
-    git clone https://github.com/elpop/sipban.git
+    git clone https://github.com/celya44/sipban.git
     ```  
 
 2. Install perl dependecies:
