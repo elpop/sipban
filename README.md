@@ -221,3 +221,7 @@ GNU GENERAL PUBLIC LICENSE Version 3
 https://www.gnu.org/licenses/gpl-3.0.en.html
 See LICENSE.txt
 ```
+
+## Sponsor the project
+
+Please [sponsor this project](https://github.com/sponsors/elpop), to pay my high debt on credit cards :)
