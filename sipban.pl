@@ -364,7 +364,7 @@ my %AMI_Handler = (
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
-            my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
+            my ($ipvx, $prot, $remote_ip, $remote_port)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/(.*?)\n/isx;
             if( ! defined $remote_ip ){
                 print LOG Time_Stamp() . " REMOTE IP EMPTY. packet_content_ref:\n$$packet_content_ref\n";
                 return;
@@ -387,6 +387,7 @@ my %AMI_Handler = (
                     $count=1;
                     $cache{$remote_ip} = [ $count, $now ];
                 }
+                print LOG Time_Stamp() . " ChallengeSent to IPV$ipvx/$prot/$remote_ip/$remote_port, Increasing Failure Count : $count/" . $Config{'flood.count'} . "\n";
             }
         },
         #-----------------------------
@@ -405,7 +406,7 @@ my %AMI_Handler = (
             my $packet_content_ref = shift;
             my ($service)    = $$packet_content_ref =~ /Service\:\s(.*?)\n/isx;
             my ($account_id) = $$packet_content_ref =~ /AccountID\:\s(.*?)\n/isx;
-            my ($ipvx, $prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/.*?\n/isx;
+            my ($ipvx, $prot, $remote_ip, $remote_port)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV(4|6)\/(.*?)\/(.*?)\/(.*?)\n/isx;
             if( ! defined $remote_ip ){
                 return;
             }elsif ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
@@ -419,7 +420,7 @@ my %AMI_Handler = (
                     }else{
                         $cache{$remote_ip} = [ $count, $cached ];
                     }
-                    # print LOG Time_Stamp() . " SucessfulAuth by IPV$ipvx/$prot/$remote_ip, Failure count : $count\n";
+                    print LOG Time_Stamp() . " SucessfulAuth by IPV$ipvx/$prot/$remote_ip/$remote_port, Decreasing Failure count : $count/" . $Config{'flood.count'} . "\n";
                 }
             }
         },
