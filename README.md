@@ -15,7 +15,7 @@ The service use iptables, you need the "**root**" user of your system
 1. Download file
   
     ```
-    git clone https://github.com/elpop/sipban.git
+    git clone https://github.com/celya44/sipban.git
     ```  
 
 2. Install perl dependecies:
@@ -23,13 +23,13 @@ The service use iptables, you need the "**root**" user of your system
     a) Ubuntu/Debian
          
     ```
-    sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
+    sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl libnetaddr-ip-perl
     ```
          
     b) Redhat/CentOS/Fedora
     
     ```     
-    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
+    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache perl-NetAddr-IP
     ```
          
 3. Copy configuration files
