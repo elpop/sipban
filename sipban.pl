@@ -82,6 +82,7 @@ my $ipt = "$Config{'iptables.path'}" . 'iptables';
 
 # Open Socket connection to accept clients requests
 my $server = IO::Socket::INET->new(LocalPort => "$Config{'control.port'}",
+                                   LocalAddr => "$Config{'control.address'}",
                                    Listen    => 10,
                                    ReuseAddr => 1 )
   or die "Can't make server socket: $@\n";
