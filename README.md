@@ -7,6 +7,18 @@ Program to stop SIP scanning attacks using live monitoring of the Asterisk AMI s
 The program use AMI (Asterisk manager Interface, with the security profile, obtain events related to SIP authorization on PJSIP and SIP channels.
 
 Tested with Asterisk version 16.3.0 - 22.1.0 (C) 1999 - 2024, Digium, Inc. and others.
+
+## Last Update (2024-12-02)
+
+* SipBan use now IPSet ([ipset.netfilter.org](https://ipset.netfilter.org)) making the iptables check of attackers more faster, with less iptables rules changes.
+* If you have version 7 or grather, the ipset "set" can handle the block timeout automatic. 
+* I conserve the time keeping for support version older than 6. This will be depreciated in the next version.
+* I only insert in the top of the iptables INPUT rules a single statement, in place of generate an adittional chain.
+* Ipset cand handle a complet net ban. I testing this feature prior to release here.
+* I keep the old version with his configuration file with the name "sipban_legacy.pl" and "sipban_legacy.conf"
+* Is tested in Ubuntu 22.04, Debian 12 and Fedora 41. I don't have other Linux Distros to test, but if you have any comments about it, please let me know.
+* As part of Sipban, i put a bash script called "sipban_admin.bash", is only a wrapper for common ipset commands for easy admin of the sipban ipset "set".
+* The SystemD file wait for "netfilter-persistent.service" to start.
     
 ## Install
    
