@@ -210,7 +210,14 @@ The service use iptables, you need the "**root**" user of your system
     ...   
     ```
 
-3. You can check the iptables rules with "**sipban_admin.bash -l**"
+3. You can check the iptables rules with "**iptables -vnL INPUT 1**"
+   
+    ```
+    [root@pbx ~]# # iptables -vnL INPUT 1 
+     4212  253K DROP all -- eno1 * 0.0.0.0/0 0.0.0.0/0 match-set sipban src
+    ```
+    
+4. You can list blocked ip's with "**sipban_admin.bash -l**"
    
     ```
     [root@pbx ~]# sipban_admin.bash -l
@@ -230,6 +237,28 @@ The service use iptables, you need the "**root**" user of your system
     209.141.54.234 timeout 596479
     172.168.40.246 timeout 596479
     ```
+    
+## sipban_admin.bash
+
+The bash script is a wrapper of the common ipset commands. Use with caution, this don't take care of the "White List".
+
+```
+# sipban_admin.bash 
+Usage: /usr/local/bin/sipban_admin.bash [options]
+options:
+    -c (create sipban set)
+    -f (flush ipset members)
+    -k (destroy sipban set)
+    -i (info of sipban set)
+
+    -a [ip] (add ip to sipban set)
+    -d [ip] (delete ip from sipban set)
+    -l {ip} (list members or test a given ip)
+
+    -s (save to sipban file)
+    -r (restore from sipban file)
+    -u [file] (upload from a given file)
+```
 
 ## Docker
 
