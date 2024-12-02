@@ -243,7 +243,7 @@ my %Client_Handler = (
                     $out_buffer{$client} .= "$ip previously blocked\n";
                 }
                 else {
-                    $ban_ip{$ip} = time() + $Config{'timer.ban'};
+                    $ban_ip{$ip} = time() + $Config{'ipset.timeout'};
                     Ipset_Block($ip,'Manual block');
                     $out_buffer{$client} .= "$ip block\n";
                 }
@@ -387,7 +387,7 @@ my %AMI_Handler = (
             my ($prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/(.*?)\/(.*?)\/.*?\n/isx;
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
-                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    $ban_ip{$remote_ip} = time() + $Config{'ipset.timeout'};
                     Ipset_Block($remote_ip,'Invalid Account');
                 }
             }
@@ -414,7 +414,7 @@ my %AMI_Handler = (
             my ($prot, $remote_ip)  = $$packet_content_ref =~ /RemoteAddress\:\sIPV4\/(.*?)\/(.*?)\/.*?\n/isx;
             if ( ($service eq 'PJSIP') || ($service eq 'SIP') || ($service eq 'IAX') || ($service eq 'IAX2') || ($service eq 'AMI') ) {
                 unless( exists($ban_ip{"$remote_ip"}) ) {
-                    $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                    $ban_ip{$remote_ip} = time() + $Config{'ipset.timeout'};
                     Ipset_Block($remote_ip,'Invalid Password');
                 }
             }
@@ -445,7 +445,7 @@ my %AMI_Handler = (
                     $cache{$remote_ip} = [ $count, $cached ];
                     if($count>$Config{'flood.count'}) {
                         unless( exists($ban_ip{"$remote_ip"}) ) {
-                            $ban_ip{$remote_ip} = time() + $Config{'timer.ban'};
+                            $ban_ip{$remote_ip} = time() + $Config{'ipset.timeout'};
                             Ipset_Block($remote_ip,'Challenge Sent');
                         }
                     }
