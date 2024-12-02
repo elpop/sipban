@@ -1,6 +1,6 @@
 [Unit]
 Description=SIP Ban Service
-After=network.target
+After=network.target netfilter-persistent.service
 
 [Service]
 Type=service
