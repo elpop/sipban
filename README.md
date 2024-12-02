@@ -35,22 +35,23 @@ The service use iptables, you need the "**root**" user of your system
     a) Ubuntu/Debian
          
     ```
-    sudo apt-get install ipset libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
+    sudo apt-get install iptables ipset libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
     ```
          
     b) Redhat/CentOS/Fedora
     
     ```     
-    sudo dnf install ipset perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
+    sudo dnf install iptables-nft ipset perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
     ```
          
 3. Copy configuration files
 
     ```      
      cd sipban
-     cp sipban.pl /usr/local/bin/.
-     cp etc/sipban.conf /etc/.
-     cp etc/sipban.wl /etc/.
+     sudo cp sipban.pl /usr/local/bin/.
+     sudo cp sipban_admin.bash /usr/local/bin/.
+     sudo cp etc/sipban.conf /etc/.
+     sudo cp etc/sipban.wl /etc/.
     ```
     
 4. Edit and add **/etc/asterisk/manager.conf** acording our sample on **sipban/etc/asterisk/manager.conf**
@@ -62,17 +63,17 @@ The service use iptables, you need the "**root**" user of your system
     a) for init.d 
     
     ```     
-    cp etc/init.d/sipban /etc/init.d/.
-    chkconfig --level 345 sipban on
-    /etc/init.d/sipban start
+    sudo cp etc/init.d/sipban /etc/init.d/.
+    sudo chkconfig --level 345 sipban on
+    sudo /etc/init.d/sipban start
     ```
                     
     b) for systemd
     
     ```     
-    cp etc/systemd/system/sipban.service /etc/systemd/system/.
-    systemctl enable sipban
-    service sipban start
+    sudo cp etc/systemd/system/sipban.service /etc/systemd/system/.
+    sudo systemctl enable sipban
+    sudo service sipban start
     ```
     
 ## Configure
@@ -145,7 +146,7 @@ The service use iptables, you need the "**root**" user of your system
     interval=10
     ```
     
-    The file is sefl explanatory. only take in count the "timer->ban" parameter are seconds (default 86400 = 1 day).
+    The file is sefl explanatory. only take in count the "ipset->timeout" parameter are seconds (default 604800 = 1 week).
    
     The "iptables->rule" option is how iptables respond to the attack, you can choose "REJECT" or "DROP"
 
