@@ -446,25 +446,21 @@ sub Iptables_Create_Chain {
     %ban_ip = ();
     $min_epoch = $max_epoch;
     # /sbin/iptables -t filter -N sipban-udp
-    # /sbin/iptables -t filter -I INPUT 1 -p udp --dport 5060 -j sipban-udp
     # /sbin/iptables -t filter -A sipban-udp -j RETURN
+    # /sbin/iptables -t filter -I INPUT -p udp --dport 5060 -j sipban-udp
     my $rv = qx($ipt -t filter -N $Config{'iptables.chain'});
-    $rv = qx($ipt -t filter -I INPUT 1 $Config{'iptables.scope'} -j $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -A $Config{'iptables.chain'} -j RETURN);
+    $rv = qx($ipt -t filter -A INPUT $Config{'iptables.scope'} -j $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} created\n";
 }
 
 sub Iptables_Erase_Chain {
-    foreach my $ip (sort keys %ban_ip) {
-        Iptables_UnBlock($ip);
-    }
-    %ban_ip = ();
+=    %ban_ip = ();
     $min_epoch = $max_epoch;
-    ## /sbin/iptables -t filter -D INPUT 1 -p udp --dport 5060 -j sipban-udp
-    # /sbin/iptables -t filter -D INPUT 1
+    # /sbin/iptables -t filter -D INPUT -p udp --dport 5060 -j sipban-udp
     # /sbin/iptables -t filter -F sipban-udp
     # /sbin/iptables -t filter -X sipban-udp
-    my $rv = qx($ipt -t filter -D INPUT 1);
+    my $rv = qx($ipt -t filter -D INPUT $Config{'iptables.scope'} -j $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -F $Config{'iptables.chain'});
     $rv = qx($ipt -t filter -X $Config{'iptables.chain'});
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
@@ -533,6 +529,7 @@ sub getCacheMatch {
 }
 
 sub Terminate {
+    Iptables_Erase_Chain();
     my $client;
     # Clean up connections
     foreach $client (keys %sessions) {
