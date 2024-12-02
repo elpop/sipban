@@ -2,11 +2,11 @@
 
 ## Description
 
-Program to stop SIP scanning attacks using live monitoring of the Asterisk AMI security Events and use iptables to block remote ip address.
+Program to stop SIP scanning attacks using live monitoring of the Asterisk AMI security Events and use iptables and ipset to block remote ip address.
 
 The program use AMI (Asterisk manager Interface, with the security profile, obtain events related to SIP authorization on PJSIP and SIP channels.
 
-Tested with Asterisk version 16.3.0 (C) 1999 - 2018, Digium, Inc. and others.
+Tested with Asterisk version 16.3.0 - 22.1.0 (C) 1999 - 2024, Digium, Inc. and others.
     
 ## Install
    
@@ -18,18 +18,18 @@ The service use iptables, you need the "**root**" user of your system
     git clone https://github.com/elpop/sipban.git
     ```  
 
-2. Install perl dependecies:
+2. Install dependecies:
          
     a) Ubuntu/Debian
          
     ```
-    sudo apt-get install libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
+    sudo apt-get install ipset libproc-pid-file-perl libconfig-simple-perl libnet-whois-ip-perl libtime-hires-perl libtie-cache-perl
     ```
          
     b) Redhat/CentOS/Fedora
     
     ```     
-    sudo dnf install perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
+    sudo dnf install ipset perl-Proc-PID-File perl-Config-Simple perl-Net-Whois-IP perl-Time-HiRes perl-Tie-Cache
     ```
          
 3. Copy configuration files
@@ -92,35 +92,44 @@ The service use iptables, you need the "**root**" user of your system
     user = "sipban"
     pass = "getout"
     host = "127.0.0.1"
-    ping = 600
+    ping = 60
     
     # Port to send commands
     [control]
     port = "4451"
-    
-    # Timers
-    [timer]
-    ban = 86400
+    address = "127.0.0.1"
     
     #Iptables rules actions config
     [iptables]
-    path  = "/sbin/"
-    chain = "sipban-udp"
+    path       = "/sbin/"
+    chain      = "sipban"
     # to block udp port 5060, you can block all but test
     # with caution to avoid lost total access to your system.
-    scope = "-p udp --dport 5060"
-    rule  = "REJECT --reject-with icmp-port-unreachable"
-    #rule  = "DROP"
+    #scope = "-p udp --dport 5060"
+    scope      = ""
+    #rule  = "REJECT --reject-with icmp-port-unreachable"
+    rule       = "DROP"
     white_list = "/etc/sipban.wl"
-    dump = "/etc/sipban.dump"
+    interface  = "eno1"
     
-    # Log file
+    [ipset]
+    path     = "/sbin/"
+    set_name = "sipban"
+    dump     = "/etc/sipban.dump"
+    # week
+    timeout  = 604800
+    # day
+    #timeout  = 86400 
+    
     [log]
     file = "/var/log/sipban.log"
-
-    # Invite Flood Attacks
+    
     [flood]
-    count=30
+    # Originaly, the value of "count" was 30, but we detect cleaver attacks
+    # using sipvicious (https://github.com/EnableSecurity/sipvicious).
+    # in this new kind of attack, send burst of flood, wait and send again
+    # avoiding the interval analysis. Adjust depending your use case.
+    count=5
     interval=10
     ```
     
@@ -159,9 +168,8 @@ The service use iptables, you need the "**root**" user of your system
     block                => List blocked ip address
     block {ip address}   => block ip address
     unblock [ip address] => unblock ip address
-    flush                => Dump the blocked IP's and clear rules on chain sipban-udp
+    save                 => Dump the blocked IP's
     restore              => If exists a dump file restore the rules from it
-    ping                 => Send ping to Asterisk AMI
     uptime               => show the program uptime
     whois                => show the WHOIS info of a given ip
     wl                   => show white list ip address
@@ -174,30 +182,41 @@ The service use iptables, you need the "**root**" user of your system
    
     ```
     [root@pbx ~]# tail -f /var/log/sipban.log 
-    [2019-06-12 12:01:50] SipBan Start
-    [2019-06-12 12:01:50] WHITE LIST => 127.0.0.1
-    [2019-06-12 12:01:55] BLOCK => 221.121.138.167
-    [2019-06-12 12:01:59] BLOCK => 77.247.110.158
-    [2019-06-12 12:02:01] BLOCK => 102.165.39.82
-    [2019-06-12 12:02:06] BLOCK => 102.165.32.36
-    [2019-06-12 12:02:07] BLOCK => 102.165.49.34
-    [2019-06-12 12:02:08] BLOCK => 77.247.109.243
+    [2024-12-02 10:40:25] SipBan Start
+    [2024-12-02 10:40:25] WHITE LIST => 127.0.0.1
+    [2024-12-02 10:40:25] WHITE LIST => 10.88.1.11
+    [2024-12-02 10:40:25] WHITE LIST => 10.88.1.1
+    [2024-12-02 10:40:25] WHITE LIST => 10.64.12.1
+    [2024-12-02 10:40:25] WHITE LIST => 10.64.12.10
+    [2024-12-02 10:40:25] IPSET => set sipban created
+    [2024-12-02 10:40:25] CHAIN => sipban created
+    [2024-12-02 10:40:31] BLOCK => 54.39.137.81 (Invalid Account)
+    [2024-12-02 10:53:46] BLOCK => 87.98.251.101 (Invalid Account)
+    [2024-12-02 10:56:42] BLOCK => 185.243.5.55 (Invalid Account)
+    [2024-12-02 11:20:20] BLOCK => 206.168.34.198 (Invalid Account)
+    [2024-12-02 12:25:48] BLOCK => 94.23.148.30 (Invalid Account)
     ...   
     ```
 
-3. You can check the iptables rules with "**iptables -S sipban-udp**"
+3. You can check the iptables rules with "**sipban_admin.bash -l**"
    
     ```
-    [root@pbx ~]# iptables -S sipban-udp
-    -N sipban-udp
-    -A sipban-udp -s 221.121.138.167/32 -j DROP 
-    -A sipban-udp -s 77.247.110.158/32 -j DROP 
-    -A sipban-udp -s 102.165.39.82/32 -j DROP 
-    -A sipban-udp -s 102.165.32.36/32 -j DROP 
-    -A sipban-udp -s 102.165.49.34/32 -j DROP 
-    -A sipban-udp -s 77.247.109.243/32 -j DROP 
-    ...
-    -A sipban-udp -j RETURN 
+    [root@pbx ~]# sipban_admin.bash -l
+
+    Name: sipban
+    Type: hash:ip
+    Revision: 5
+    Header: family inet hashsize 4096 maxelem 65536 timeout 604800 bucketsize 12 initval 0x285783a9
+    Size in memory: 3536
+    References: 1
+    Number of entries: 6
+    Members:
+    23.95.39.90 timeout 596479
+    94.23.145.155 timeout 596479
+    84.32.32.134 timeout 596479
+    154.212.141.253 timeout 596479
+    209.141.54.234 timeout 596479
+    172.168.40.246 timeout 596479
     ```
 
 ## Docker
