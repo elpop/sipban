@@ -150,7 +150,7 @@ sub Ipset_Exists_Set {
 
 sub Ipset_Create_Set {
     # /usr/sbin/ipset create sippban hash:ip hashsize 4096 timeout 604800
-    my $rv = qx($ips create $Config{'ipset.set_name'} hash:ip hashsize 4096 timeout $Config{'ipset.timeout'});
+    my $rv = qx($ips create $Config{'ipset.set_name'} hash:net hashsize 4096 timeout $Config{'ipset.timeout'});
     print LOG Time_Stamp() . " IPSET => set $Config{'ipset.set_name'} created\n";
 }
 
