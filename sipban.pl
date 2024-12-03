@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #======================================================================#
-# Program => sipban_ipset.pl (In Perl 5.0)               version 1.0.0 #
+# Program => sipban.pl (In Perl 5.0)                     version 1.0.0 #
 #======================================================================#
 # Autor => Fernando "El Pop" Romo                   (pop@cofradia.org) #
 # Creation date => 07/jun/2019                                         #
@@ -125,6 +125,12 @@ $LICENSE .= "for details https://www.gnu.org/licenses/gpl-3.0.en.html\n";
 $LICENSE .= "This is free software, and you are welcome to redistribute\n";
 $LICENSE .= "it under certain conditions.";
 
+# RegExp to validate a valid ip address
+my $IPv4 = '(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))';
+
 # open log file
 open(LOG, ">> $Config{'log.file'}") or die;
 LOG->autoflush(1);
@@ -136,10 +142,13 @@ print LOG Time_Stamp() . " SipBan Start\n";
 #-----------------#
 
 sub Ipset_Exists_Set {
-    #/usr/sbin/ipset list -t sippban
-    open(FH, "-|",  "$ips list -t $Config{'ipset.set_name'}") or die "Can't open pipe: $!";
-    my @rv = <FH>;
-    close(FH);
+    my @rv = ();
+    eval {
+        #/usr/sbin/ipset list -t sippban
+        open(FH, "-|",  "$ips list -t $Config{'ipset.set_name'}");
+        @rv = <FH>;
+        close(FH);
+    };
     if ( $rv[0] =~ /Name\: $Config{'ipset.set_name'}/g) {
         return 1;
     }
@@ -238,7 +247,7 @@ my %Client_Handler = (
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
             my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip) {
+            if ($ip =~ /^$IPv4$/) {
                 if (exists($ban_ip{$ip})) {
                     $out_buffer{$client} .= "$ip previously blocked\n";
                 }
@@ -264,7 +273,7 @@ my %Client_Handler = (
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
             my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip) {
+            if ($ip =~ /^$IPv4$/) {
                 if (exists($ban_ip{$ip})) {
                     Ipset_Unblock($ip);
                     delete $ban_ip{$ip};
@@ -310,7 +319,7 @@ my %Client_Handler = (
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
             my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip) {
+            if ($ip =~ /^$IPv4$/) {
                 $out_buffer{$client} .= "WHOIS information: $ip\n\n";
                 my $response = ();
                 my $status = eval { $response = whoisip_query($ip) } ;
