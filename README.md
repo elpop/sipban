@@ -14,16 +14,7 @@ Tested with Asterisk version 16.3.0 - 22.1.0 (C) 1999 - 2024, Digium, Inc. and o
 * If you have version 7 or grather, the ipset "set" can handle the block timeout automatic. 
 * I conserve the time keeping for support version older than 6. This will be depreciated in the next version.
 * I only insert in the top of the iptables INPUT rules a single statement, in place of generate an adittional chain.
-* Ipset can handle a complet net ban. I testing this feature prior to release here. If you are in a hurry to block a net, can do it directly using ipset (the example is with a real attacker net):
-
-```
-    sudo ipset add sipban 185.243.5.0/24
-    
-    or
-
-    sudo ipset del sipban 185.243.5.0/24
-```
-
+* Ipset can handle a complet ip/class ban. With **sipban_admin.bash** you can block entire ip/class.
 * I keep the old version with his configuration file with the name "sipban_legacy.pl" and "sipban_legacy.conf"
 * Is tested in Ubuntu 22.04, Debian 12 and Fedora 41. I don't have other Linux Distros to test, but if you have any comments about it, please let me know.
 * As part of Sipban, i put a bash script called "sipban_admin.bash", is only a wrapper for common ipset commands for easy admin of the sipban ipset "set".
@@ -278,7 +269,7 @@ Our friend Federico Pereira (lord.basex@gmail.com), make the docker image of Sip
 ## To-do
 
    - IPv6 support
-   - IP Class blocking
+   - ~~ip Class blocking~~
 
 ## Author
 
