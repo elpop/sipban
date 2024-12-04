@@ -169,7 +169,7 @@ The service use iptables, you need the "**root**" user of your system
         
 ## Operation
 
-1. The service are fully automatic, but you can control through the port 4451 (or another defined on **/etc/sipban.conf**), v.g.:
+1. The service are fully automatic, but you can control through the port 4451 (or another defined on **/etc/sipban.conf**) and using **sipban_admin.bash**, v.g.:
    
     ```   
     [root@pbx ~]# telnet localhost 4451
