@@ -261,7 +261,7 @@ options:
     -k (destroy sipban set)
     -i (info of sipban set)
 
-    -a [ip] (add ip to sipban set)
+    -a [ip] or [ip/class] (add ip or ip/class to sipban set)'
     -d [ip] (delete ip from sipban set)
     -l {ip} (list members or test a given ip)
 
