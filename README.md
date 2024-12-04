@@ -14,7 +14,7 @@ Tested with Asterisk version 16.3.0 - 22.1.0 (C) 1999 - 2024, Digium, Inc. and o
 * If you have version 7 or grather, the ipset "set" can handle the block timeout automatic. 
 * I conserve the time keeping for support version older than 6. This will be depreciated in the next version.
 * I only insert in the top of the iptables INPUT rules a single statement, in place of generate an adittional chain.
-* Ipset cand handle a complet net ban. I testing this feature prior to release here. If you are in a hurry to block a net, can do it directly using ipset (the example is with a real attacker net):
+* Ipset can handle a complet net ban. I testing this feature prior to release here. If you are in a hurry to block a net, can do it directly using ipset (the example is with a real attacker net):
 
 ```
     sudo ipset add sipban 185.243.5.0/24
