@@ -144,13 +144,8 @@ print LOG Time_Stamp() . " SipBan Start\n";
 
 sub Ipset_Exists_Set {
     my @rv = ();
-    eval {
-        #/usr/sbin/ipset list -t sippban
-        open(FH, "-|",  "$ips list -t $Config{'ipset.set_name'}");
-        @rv = <FH>;
-        close(FH);
-    };
-    if ( $rv[0] =~ /Name\: $Config{'ipset.set_name'}/g) {
+    @rv = qx($ips list -t $Config{'ipset.set_name'});
+    if ( $rv[0] =~ /Name\:\s$Config{'ipset.set_name'}/g) {
         return 1;
     }
     else {
@@ -199,6 +194,19 @@ sub Ipset_Unblock {
         # /usr/sbin/ipset -q add sippban $ip > /dev/null
         my $rv = qx($ips -q del $Config{'ipset.set_name'} $ip);
         print LOG Time_Stamp() . " UNBLOCK => $ip ($msg)\n";
+    }
+}
+
+sub Ipset_Load_Ban_IP {
+    # /usr/sbin/ipset restore -! < /$SAVE_FILE/etc/sippban.dump
+    my @rv = qx($ips list $Config{'ipset.set_name'});
+    my $now = time();
+    foreach my $line (@rv) {
+        chomp($line);
+        my ($ip, $timeout) = $line =~ /^(.*)\stimeout\s(.*)/;
+        if ($ip =~ /$IPv4/) {
+            $ban_ip{$ip} = $now + $timeout;
+        }
     }
 }
 
@@ -728,10 +736,12 @@ if (-e $Config{'iptables.white_list'}) {
 # Check if exists Ipset set
 if ( Ipset_Exists_Set() ) {
     Ipset_Restore_Set();
+    Ipset_Load_Ban_IP();
 }
 else {
     if (-e $Config{'ipset.dump'}) {
         Ipset_Restore_Set();
+        Ipset_Load_Ban_IP();
     }
     else {
         Ipset_Create_Set();
