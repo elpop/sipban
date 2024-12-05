@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #======================================================================#
-# Program => sipban.pl (In Perl 5.0)                     version 1.0.0 #
+# Program => sipban.pl (In Perl 5.0)                     version 1.0.1 #
 #======================================================================#
 # Autor => Fernando "El Pop" Romo                   (pop@cofradia.org) #
 # Creation date => 07/jun/2019                                         #
@@ -125,11 +125,12 @@ $LICENSE .= "for details https://www.gnu.org/licenses/gpl-3.0.en.html\n";
 $LICENSE .= "This is free software, and you are welcome to redistribute\n";
 $LICENSE .= "it under certain conditions.";
 
-# RegExp to validate a valid ip address
-my $IPv4 = '(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
-              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
-              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
-              '(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))';
+# RegExp to validate a valid ip/class address
+my $IPv4 ='^((25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+           '(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+           '(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.]' .
+           '(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))' .
+           '(\/(3[0-2]|[1-2][0-9]|[0-9]))?$';
 
 # open log file
 open(LOG, ">> $Config{'log.file'}") or die;
@@ -236,6 +237,138 @@ sub Iptables_Erase_Chain {
     print LOG Time_Stamp() . " CHAIN => $Config{'iptables.chain'} erased\n";
 }
 
+#--------------------#
+# Asterisk functions #
+#--------------------#
+
+sub Connect_To_Asterisk {
+    my $host = shift;
+    $asterisk_handler = new IO::Socket::INET->new( PeerAddr  => "$host",
+                                                   PeerPort  => $Config{'ami.port'},
+                                                   Proto     => "tcp",
+                                                   ReuseAddr => 1,
+                                                   Blocking  => 0,
+                                                   Type      => SOCK_STREAM );
+    if ($asterisk_handler) {
+        $asterisk_handler->autoflush(1);
+        $select->add($asterisk_handler);
+        return 0;
+    }
+    else {
+    	return 1;
+    }
+}
+
+sub Send_To_Asterisk {
+    my $command_ref = shift;
+    if ($$command_ref ne '' && $manager_connect_flag == 0) {
+        $out_buffer{$asterisk_handler} .= $$command_ref;
+    }
+}
+
+sub Manager_Login {
+    my $command  = "Action: login\r\n";
+    $command .= "Username: $Config{'ami.user'}\r\n";
+    $command .= "Secret: $Config{'ami.pass'}\r\n";
+    $command .= "Events: on\r\n\r\n";
+    Send_To_Asterisk(\$command);
+}
+
+#-------------------#
+# Utility functions #
+#-------------------#
+
+sub Trim {
+    my @out = @_;
+
+    for (@out) {
+         s/^\s+//g;
+         s/\s+$//g;
+    }
+    return wantarray ? @out : $out[0];
+}
+
+sub Get_IP {
+    my $address = shift;
+    $address = Trim($address);
+    my ($ip)  = $address =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+    my ($net) = $address =~ /\/(\d{1,2})/;
+    if ($net ne ''){
+        $ip .= "\/$net"
+    };
+    my $status = 0;
+    if ($ip =~ /$IPv4/) {
+        $status =1;
+    }
+    return $ip, $status;
+}
+
+sub Time_Stamp {
+    my $time = shift;
+    $time = time() unless($time);
+    my ($sec, $min, $hour, $day,$month,$year) = (localtime( $time ))[0,1,2,3,4,5];
+    $year = $year + 1900;
+    $month++;
+    return sprintf("\[%04d-%02d-%02d %02d:%02d:%02d\]",$year,$month,$day,$hour,$min,$sec);
+}
+
+sub Convert_To_Time {
+    my $time = shift;
+    my $days = int($time / 86400);
+    my $aux = $time % 86400;
+    my $hours = int($aux / 3600);
+       $aux = $aux % 3600;
+    my $minutes = int($aux / 60);
+    my $seconds = $time % 60;
+    my $result = "";
+    if ($days == 1) {
+        $result = "$days day ";
+    }
+    elsif ($days > 1) {
+        $result = "$days days ";
+    }
+    $result .= sprintf("%02d\:%02d\:%02d",$hours,$minutes,$seconds);
+    return $result;
+}
+
+sub getCacheMatch {
+    my $check_value = shift;
+    my $timeout = $Config{'flood.interval'};
+
+    # Check cache for a match.
+    my ($result, $time_cached);
+    my $now = time();
+    my $time_cached;
+    my $cache_entry = $cache{$check_value};
+    if ($cache_entry) {
+        ($result, $time_cached) = @{$cache_entry};
+        if ($now - $time_cached > $timeout) {
+            delete $cache{$check_value};
+            return undef;
+        } else {
+            return ($result, $time_cached);
+       }
+    }
+}
+
+sub Terminate {
+    Iptables_Erase_Chain();
+    Ipset_Save();
+    Ipset_Destroy_Set();
+
+    my $client;
+    # Clean up connections
+    foreach $client (keys %sessions) {
+        $select->remove($client);
+        close($client);
+    }
+    close($server);                   # destroy socket handler
+    close($asterisk_handler);         # destroy asterisk manager conection
+    print LOG Time_Stamp() . " SipBan Stop\n";
+    close(LOG);
+    exit(0);                          # Exit without error
+}
+
 #----------------------------------------------------------------------------------------------
 # [Developer Note]: the process of each client request is declared in the %Client_Handler
 #                   Hash and use references for speed operations in the event detection cycle.
@@ -246,8 +379,8 @@ my %Client_Handler = (
         my $control = shift;
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
-            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip =~ /^$IPv4$/) {
+            my ($ip, $valid) = Get_IP($control->[1]);
+            if ($valid) {
                 if (exists($ban_ip{$ip})) {
                     $out_buffer{$client} .= "$ip previously blocked\n";
                 }
@@ -272,8 +405,8 @@ my %Client_Handler = (
         my $control = shift;
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
-            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip =~ /^$IPv4$/) {
+            my ($ip, $valid) = Get_IP($control->[1]);
+            if ($valid) {
                 if (exists($ban_ip{$ip})) {
                     Ipset_Unblock($ip);
                     delete $ban_ip{$ip};
@@ -318,8 +451,8 @@ my %Client_Handler = (
         my $control = shift;
         $out_buffer{$client} .= '';
         if (exists($control->[1])) {
-            my ($ip) = $control->[1] =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
-            if ($ip =~ /^$IPv4$/) {
+            my ($ip, $valid) = Get_IP($control->[1]);
+            if ($valid) {
                 $out_buffer{$client} .= "WHOIS information: $ip\n\n";
                 my $response = ();
                 my $status = eval { $response = whoisip_query($ip) } ;
@@ -476,119 +609,6 @@ my %AMI_Handler = (
     } # Response
 );
 
-sub Time_Stamp {
-    my $time = shift;
-    $time = time() unless($time);
-    my ($sec, $min, $hour, $day,$month,$year) = (localtime( $time ))[0,1,2,3,4,5];
-    $year = $year + 1900;
-    $month++;
-    return sprintf("\[%04d-%02d-%02d %02d:%02d:%02d\]",$year,$month,$day,$hour,$min,$sec);
-}
-
-sub Convert_To_Time {
-    my $time = shift;
-    my $days = int($time / 86400);
-    my $aux = $time % 86400;
-    my $hours = int($aux / 3600);
-       $aux = $aux % 3600;
-    my $minutes = int($aux / 60);
-    my $seconds = $time % 60;
-    my $result = "";
-    if ($days == 1) {
-        $result = "$days day ";
-    }
-    elsif ($days > 1) {
-        $result = "$days days ";
-    }
-    $result .= sprintf("%02d\:%02d\:%02d",$hours,$minutes,$seconds);
-    return $result;
-}
-
-sub getCacheMatch {
-    my $check_value = shift;
-    my $timeout = $Config{'flood.interval'};
-
-    # Check cache for a match.
-    my ($result, $time_cached);
-    my $now = time();
-    my $time_cached;
-    my $cache_entry = $cache{$check_value};
-    if ($cache_entry) {
-        ($result, $time_cached) = @{$cache_entry};
-        if ($now - $time_cached > $timeout) {
-            delete $cache{$check_value};
-            return undef;
-        } else {
-            return ($result, $time_cached);
-       }
-    }
-}
-
-sub Terminate {
-    Iptables_Erase_Chain();
-    Ipset_Save();
-    Ipset_Destroy_Set();
-
-    my $client;
-    # Clean up connections
-    foreach $client (keys %sessions) {
-        $select->remove($client);
-        close($client);
-    }
-    close($server);                   # destroy socket handler
-    close($asterisk_handler);         # destroy asterisk manager conection
-    print LOG Time_Stamp() . " SipBan Stop\n";
-    close(LOG);
-    exit(0);                          # Exit without error
-}
-
-#--------------------#
-# Asterisk functions #
-#--------------------#
-
-sub Connect_To_Asterisk {
-    my $host = shift;
-    $asterisk_handler = new IO::Socket::INET->new( PeerAddr  => "$host",
-                                                   PeerPort  => $Config{'ami.port'},
-                                                   Proto     => "tcp",
-                                                   ReuseAddr => 1,
-                                                   Blocking  => 0,
-                                                   Type      => SOCK_STREAM );
-    if ($asterisk_handler) {
-        $asterisk_handler->autoflush(1);
-        $select->add($asterisk_handler);
-        return 0;
-    }
-    else {
-    	return 1;
-    }
-}
-
-sub Send_To_Asterisk {
-    my $command_ref = shift;
-    if ($$command_ref ne '' && $manager_connect_flag == 0) {
-        $out_buffer{$asterisk_handler} .= $$command_ref;
-    }
-}
-
-sub Trim {
-    my @out = @_;
-
-    for (@out) {
-         s/^\s+//g;
-         s/\s+$//g;
-    }
-    return wantarray ? @out : $out[0];
-}
-
-sub Manager_Login {
-    my $command  = "Action: login\r\n";
-    $command .= "Username: $Config{'ami.user'}\r\n";
-    $command .= "Secret: $Config{'ami.pass'}\r\n";
-    $command .= "Events: on\r\n\r\n";
-    Send_To_Asterisk(\$command);
-}
-
 #---------------------------------------------------------#
 #  Function: Handle_Clients([Client TCP handler])         #
 #---------------------------------------------------------#
@@ -696,10 +716,10 @@ if (-e $Config{'iptables.white_list'}) {
     open WL, "< $Config{'iptables.white_list'}" || die "Can\'t open file\n";
     while(<WL>) { # Read records
         chomp;
-        my ($ip) = $_ =~ /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?)/;
-        if ($ip) {
-            $white_list{$_} = 1;
-            print LOG Time_Stamp() . " WHITE LIST => $_\n";
+        my ($ip, $valid) = Get_IP($_);
+        if ($valid) {
+            $white_list{$ip} = 1;
+            print LOG Time_Stamp() . " WHITE LIST => $ip\n";
         }
     }
     close (WL);
