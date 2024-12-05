@@ -206,7 +206,7 @@ sub Ipset_Prune_Block {
     my $time = shift;
     foreach my $ip (sort keys %ban_ip) {
         if ($time >= $ban_ip{$ip}) {
-            Ipset_Unblock($ip);
+            Ipset_Unblock($ip, 'Timeout Unblock');
             delete $ban_ip{$ip};
         }
         else {
@@ -408,7 +408,7 @@ my %Client_Handler = (
             my ($ip, $valid) = Get_IP($control->[1]);
             if ($valid) {
                 if (exists($ban_ip{$ip})) {
-                    Ipset_Unblock($ip);
+                    Ipset_Unblock($ip, 'Manual Unblock');
                     delete $ban_ip{$ip};
                     my $hash_size = keys %ban_ip;
                     if ($hash_size <= 0) {
