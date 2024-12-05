@@ -198,7 +198,7 @@ sub Ipset_Unblock {
     unless( exists($white_list{$ip}) ) {
         # /usr/sbin/ipset -q add sippban $ip > /dev/null
         my $rv = qx($ips -q del $Config{'ipset.set_name'} $ip);
-        print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
+        print LOG Time_Stamp() . " UNBLOCK => $ip ($msg)\n";
     }
 }
 
