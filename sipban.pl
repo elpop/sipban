@@ -182,6 +182,9 @@ sub Ipset_Restore_Set {
 sub Ipset_Block {
     my ($ip, $msg) = @_;
     unless( exists($white_list{$ip}) ) {
+        if ($min_epoch > $ban_ip{$ip}) {
+            $min_epoch = $ban_ip{$ip};
+        }        
         # /usr/sbin/ipset -q add sippban $ip > /dev/null
         my $rv = qx($ips -q add $Config{'ipset.set_name'} $ip);
         print LOG Time_Stamp() . " BLOCK => $ip ($msg)\n";
@@ -198,6 +201,7 @@ sub Ipset_Unblock {
 }
 
 sub Ipset_Load_Ban_IP {
+    %ban_ip = ();
     # /usr/sbin/ipset restore -! < /$SAVE_FILE/etc/sippban.dump
     my @rv = qx($ips list $Config{'ipset.set_name'});
     my $now = time();
@@ -206,6 +210,9 @@ sub Ipset_Load_Ban_IP {
         my ($ip, $timeout) = $line =~ /^(.*)\stimeout\s(.*)/;
         if ($ip =~ /$IPv4/) {
             $ban_ip{$ip} = $now + $timeout;
+            if ($min_epoch > $ban_ip{$ip}) {
+                $min_epoch = $ban_ip{$ip};
+            }
         }
     }
 }
@@ -443,7 +450,8 @@ my %Client_Handler = (
     },
     "restore" => sub {
         my $client = shift;
-        Ipset_Restore($client);
+        Ipset_Restore_Set($client);
+        Ipset_Load_Ban_IP();
         $out_buffer{$client} .= "ipset $Config{'ipset.set_name'} restore\n";
     },
     "help" => sub {
